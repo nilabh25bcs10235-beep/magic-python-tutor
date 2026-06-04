@@ -219,6 +219,17 @@ if user_response.lower() == "yes":
         title = "User input — Interacting based on your question"
         base_recap = "input() gets text from the user. Combine with if/else for decisions."
 
+    elif any(w in q for w in ["range", "negative step", "reverse index", "traversal", "backward", "negative"]):
+        code = f'''# Based on your question: {safe_query}
+# Real Life: Reverse index traversal (e.g. process list from last to first without reversing it)
+tasks = ["task1", "task2", "task3", "task4"]
+print(f"Reverse traversal for your question: {safe_query}")
+for i in range(len(tasks)-1, -1, -1):
+    print(f"Index {i} (from end): {tasks[i]}")
+print("Using range with negative step for reverse without extra memory or reversing the list!")'''
+        title = "Reverse Index Traversal (Using range with Negative Step)"
+        base_recap = "range(start, stop, -step) traverses backwards by index. Great for reverse processing, palindromes, last-to-first tasks."
+
     else:
         # Truly generic but still query-specific
         code = f'''# Real World example based directly on your question: {safe_query}
