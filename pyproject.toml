@@ -34,7 +34,7 @@ classifiers = [
   "Topic :: Software Development :: User Interfaces",
 ]
 
-[project.scripts]
+[project.gui-scripts]
 magic-tutor = "gui:main"
 
 [project.urls]

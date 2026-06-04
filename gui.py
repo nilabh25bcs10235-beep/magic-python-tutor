@@ -15,6 +15,14 @@ import tempfile
 import threading
 import time
 
+# Hide the console window on Windows when launched directly (clean GUI experience)
+if os.name == "nt":
+    try:
+        import ctypes
+        ctypes.windll.user32.ShowWindow(ctypes.windll.kernel32.GetConsoleWindow(), 0)
+    except Exception:
+        pass
+
 # =============================================================================
 # CONFIG
 # =============================================================================
@@ -165,8 +173,10 @@ print("All spells cast using one function!")''',
             "filename": "magic_spell_function.py"
         }
     else:
+        # Truncate very long queries to prevent UI issues / "endless" display
+        safe_query = query[:80] + "..." if len(query) > 80 else query
         return {
-            "title": f"Real-world helper for: {query}",
+            "title": f"Real-world helper for: {safe_query}",
             "story": "You are teaching a little robot how to help around the house by collecting and organizing tasks.",
             "mission": "Personal Robot Helper",
             "code": f'''# Real World: Personal Robot Helper
@@ -187,6 +197,9 @@ class MagicTutorApp(ctk.CTk):
     def __init__(self):
         super().__init__()
 
+        # Start hidden for clean launch (no flash or console garbage)
+        self.withdraw()
+
         self.title("MAGIC TUTOR")
         self.geometry("1100x720")
         self.minsize(900, 600)
@@ -199,6 +212,11 @@ class MagicTutorApp(ctk.CTk):
 
         self._build_ui()
         self._show_welcome()
+
+        # Show the clean window
+        self.deiconify()
+        self.lift()
+        self.focus_force()
 
     def _build_ui(self):
         # === TOP HEADER - BIG TEKKY "MAGIC TUTOR" ===
@@ -278,11 +296,13 @@ class MagicTutorApp(ctk.CTk):
         ctk.CTkLabel(center, text="🧸 THE STORY", font=("Consolas", 12), text_color=ACCENT_CYAN).pack(anchor="w")
         self.story_box = ctk.CTkTextbox(center, height=110, fg_color=CODE_BG, text_color=TEXT_LIGHT, font=("Consolas", 11))
         self.story_box.pack(fill="x", pady=(2, 8))
+        self.story_box.delete("0.0", "end")  # ensure clean on startup
 
         # Mission
         ctk.CTkLabel(center, text="🌍 REAL WORLD MISSION", font=("Consolas", 12), text_color=ACCENT_MAGENTA).pack(anchor="w")
         self.mission_box = ctk.CTkTextbox(center, height=45, fg_color=PANEL_BG, text_color=ACCENT_GREEN, font=("Consolas", 11, "bold"))
         self.mission_box.pack(fill="x", pady=(2, 8))
+        self.mission_box.delete("0.0", "end")  # ensure clean on startup
 
         # Code area
         code_header = ctk.CTkFrame(center, fg_color="transparent")
@@ -297,6 +317,7 @@ class MagicTutorApp(ctk.CTk):
 
         self.code_box = ctk.CTkTextbox(center, height=180, fg_color=CODE_BG, text_color="#aaffff", font=("Consolas", 10))
         self.code_box.pack(fill="both", expand=True, pady=(2, 6))
+        self.code_box.delete("0.0", "end")  # ensure clean on startup
 
         # Action buttons
         actions = ctk.CTkFrame(center, fg_color="transparent")
@@ -318,6 +339,7 @@ class MagicTutorApp(ctk.CTk):
         ctk.CTkLabel(center, text="📤 PROGRAM OUTPUT (what really happens)", font=("Consolas", 11), text_color=ACCENT_MAGENTA).pack(anchor="w", pady=(6, 2))
         self.output_box = ctk.CTkTextbox(center, height=110, fg_color="#05050f", text_color=ACCENT_GREEN, font=("Consolas", 10))
         self.output_box.pack(fill="x")
+        self.output_box.delete("0.0", "end")  # ensure clean on startup
 
         # RIGHT - Recap + Tips
         right = ctk.CTkFrame(main_frame, width=260, fg_color=PANEL_BG, corner_radius=12)
@@ -327,6 +349,7 @@ class MagicTutorApp(ctk.CTk):
 
         self.recap_box = ctk.CTkTextbox(right, fg_color=CODE_BG, text_color=TEXT_LIGHT, font=("Consolas", 10))
         self.recap_box.pack(fill="both", expand=True, padx=8, pady=4)
+        self.recap_box.delete("0.0", "end")  # ensure clean on startup
 
         # Bottom input bar
         input_bar = ctk.CTkFrame(self, fg_color="#05050f", height=50, corner_radius=0)
@@ -337,6 +360,7 @@ class MagicTutorApp(ctk.CTk):
             font=("Consolas", 12), width=500, fg_color=CODE_BG, text_color="white"
         )
         self.query_entry.pack(side="left", padx=15, pady=8)
+        self.query_entry.delete(0, "end")  # ensure clean on startup
         self.query_entry.bind("<Return>", lambda e: self.ask_free())
 
         ask_btn = ctk.CTkButton(
@@ -347,25 +371,28 @@ class MagicTutorApp(ctk.CTk):
 
     def _show_welcome(self):
         self.topic_label.configure(text="🪄 MAGIC TUTOR — What do you want to master today?")
-        self.story_box.delete("0.0", "end")
+        self.query_entry.delete(0, "end")
+        for box in [self.story_box, self.mission_box, self.code_box, self.output_box, self.recap_box]:
+            box.delete("0.0", "end")
         self.story_box.insert("0.0", "Welcome to the standalone MAGIC TUTOR app!\n\n"
                               "• Pick a lesson on the left\n"
                               "• Or type any question in the bottom bar\n"
                               "• Click 'WATCH LIVE TYPING' to see the code appear like magic\n"
                               "• Hit 'RUN IN REAL LIFE' to actually execute it\n\n"
                               "All examples are saved in the examples/ folder.")
-        self.mission_box.delete("0.0", "end")
-        self.code_box.delete("0.0", "end")
-        self.output_box.delete("0.0", "end")
-        self.recap_box.delete("0.0", "end")
         self.recap_box.insert("0.0", "Real code.\nReal stories.\nReal execution.\n\nNo boring theory — only things you can actually use.")
+        self.update_idletasks()  # force clean paint
 
     def load_lesson(self, key: str):
         lesson = LESSONS[key]
         self.current_lesson = lesson
         self.current_code = lesson["code"]
 
-        self.topic_label.configure(text=lesson["title"])
+        # Prevent extremely long titles from breaking the UI layout
+        display_title = lesson["title"]
+        if len(display_title) > 90:
+            display_title = display_title[:87] + "..."
+        self.topic_label.configure(text=display_title)
         self.story_box.delete("0.0", "end")
         self.story_box.insert("0.0", lesson["story"])
 
@@ -386,11 +413,16 @@ class MagicTutorApp(ctk.CTk):
         dialog = ctk.CTkInputDialog(text="What Python or dev concept do you want explained?", title="Ask MAGIC TUTOR")
         query = dialog.get_input()
         if query:
+            if len(query) > 200:
+                query = query[:197] + "..."
             self._process_query(query)
 
     def ask_free(self):
         query = self.query_entry.get().strip()
         if query:
+            # Prevent extremely long inputs from causing display/loop issues
+            if len(query) > 200:
+                query = query[:197] + "..."
             self._process_query(query)
             self.query_entry.delete(0, "end")
 
@@ -399,7 +431,11 @@ class MagicTutorApp(ctk.CTk):
         self.current_lesson = lesson
         self.current_code = lesson["code"]
 
-        self.topic_label.configure(text=lesson["title"])
+        # Prevent extremely long titles from breaking the UI layout
+        display_title = lesson["title"]
+        if len(display_title) > 90:
+            display_title = display_title[:87] + "..."
+        self.topic_label.configure(text=display_title)
         self.story_box.delete("0.0", "end")
         self.story_box.insert("0.0", lesson["story"])
 
