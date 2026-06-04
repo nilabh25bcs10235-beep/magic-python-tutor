@@ -152,7 +152,7 @@ def get_lesson(query: str):
     # Base dynamic text that always mentions the user's query
     base_story = f"You asked about '{safe_query}'. Here's a real-world Python example tailored to that idea."
     base_mission = f"Building a helper based on your question about {safe_query}"
-    base_recap = "Python lets you solve real problems with the right tools (lists, functions, loops, etc.). Tailored to what you asked."
+    base_recap = f"What you learned from your question about '{safe_query}': Python lets you solve real problems with the right tools (lists, functions, loops, etc.)."
     filename = "custom_example.py"
 
     # Dynamic code generation based on query keywords
