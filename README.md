@@ -19,7 +19,7 @@ Just ask a question in plain English. It builds a fun, kid-friendly real-life ex
 ### Option 1: Clone and run (recommended for first use)
 
 ```powershell
-git clone https://github.com/nil6942/magic-python-tutor.git
+git clone https://github.com/nilabh25bcs10235-beep/magic-python-tutor.git
 cd magic-python-tutor
 python magic_tutor.py
 ```
@@ -27,7 +27,7 @@ python magic_tutor.py
 ### Option 2: Install directly from GitHub (get `magic-tutor` command)
 
 ```powershell
-pip install git+https://github.com/nil6942/magic-python-tutor.git
+pip install git+https://github.com/nilabh25bcs10235-beep/magic-python-tutor.git
 magic-tutor
 ```
 
