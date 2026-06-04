@@ -380,29 +380,39 @@ class MagicTutorApp(ctk.CTk):
         self.update_idletasks()  # force clean paint
 
     def load_lesson(self, key: str):
-        lesson = LESSONS[key]
-        self.current_lesson = lesson
-        self.current_code = lesson["code"]
+        try:
+            lesson = LESSONS[key]
+            self.current_lesson = lesson
+            self.current_code = lesson["code"]
 
-        # Prevent extremely long titles from breaking the UI layout
-        display_title = lesson["title"]
-        if len(display_title) > 90:
-            display_title = display_title[:87] + "..."
-        self.topic_label.configure(text=display_title)
-        self.story_box.delete("0.0", "end")
-        self.story_box.insert("0.0", lesson["story"])
+            # Prevent extremely long titles from breaking the UI layout
+            display_title = lesson["title"]
+            if len(display_title) > 90:
+                display_title = display_title[:87] + "..."
+            self.topic_label.configure(text=display_title)
+            self.story_box.delete("0.0", "end")
+            self.story_box.insert("0.0", lesson["story"])
+            self.story_box.see("0.0")
 
-        self.mission_box.delete("0.0", "end")
-        self.mission_box.insert("0.0", lesson["mission"])
+            self.mission_box.delete("0.0", "end")
+            self.mission_box.insert("0.0", lesson["mission"])
 
-        self.code_box.delete("0.0", "end")
-        self.code_box.insert("0.0", lesson["code"])
+            self.code_box.delete("0.0", "end")
+            self.code_box.insert("0.0", lesson["code"])
 
-        self.recap_box.delete("0.0", "end")
-        self.recap_box.insert("0.0", lesson["recap"])
+            self.recap_box.delete("0.0", "end")
+            self.recap_box.insert("0.0", lesson["recap"])
 
-        self.output_box.delete("0.0", "end")
-        self.output_box.insert("0.0", "Click 'RUN IN REAL LIFE' to execute this code...")
+            self.output_box.delete("0.0", "end")
+            self.output_box.insert("0.0", 
+                "✅ Lesson loaded.\n\n"
+                "Use the 'WATCH LIVE TYPING' and 'RUN IN REAL LIFE' buttons to interact with the code.")
+            self.output_box.see("0.0")
+
+            self.update_idletasks()
+        except Exception as e:
+            self.output_box.delete("0.0", "end")
+            self.output_box.insert("0.0", f"Error loading lesson: {str(e)}")
 
     def _ask_anything_dialog(self):
         # Simple dialog for free text
@@ -411,6 +421,9 @@ class MagicTutorApp(ctk.CTk):
         if query:
             if len(query) > 200:
                 query = query[:197] + "..."
+            self.output_box.delete("0.0", "end")
+            self.output_box.insert("0.0", f"Processing question: {query} ...")
+            self.update_idletasks()
             self._process_query(query)
 
     def ask_free(self):
@@ -419,7 +432,14 @@ class MagicTutorApp(ctk.CTk):
             # Prevent extremely long inputs from causing display/loop issues
             if len(query) > 200:
                 query = query[:197] + "..."
-            self._process_query(query)
+            self.output_box.delete("0.0", "end")
+            self.output_box.insert("0.0", f"Processing question: {query} ...")
+            self.update_idletasks()
+            try:
+                self._process_query(query)
+            except Exception as e:
+                self.output_box.delete("0.0", "end")
+                self.output_box.insert("0.0", f"Error processing: {str(e)}")
             self.query_entry.delete(0, "end")
 
     def _process_query(self, query: str):
@@ -434,6 +454,7 @@ class MagicTutorApp(ctk.CTk):
         self.topic_label.configure(text=display_title)
         self.story_box.delete("0.0", "end")
         self.story_box.insert("0.0", lesson["story"])
+        self.story_box.see("0.0")
 
         self.mission_box.delete("0.0", "end")
         self.mission_box.insert("0.0", lesson["mission"])
@@ -444,8 +465,17 @@ class MagicTutorApp(ctk.CTk):
         self.recap_box.delete("0.0", "end")
         self.recap_box.insert("0.0", lesson["recap"])
 
+        # Give a clear visible response in the output area
         self.output_box.delete("0.0", "end")
-        self.output_box.insert("0.0", "Ready. Click the buttons below to see the magic.")
+        self.output_box.insert("0.0", 
+            f"✅ Response for your question about '{query}':\n\n"
+            f"Lesson: {lesson['title']}\n\n"
+            "The story, mission, and code are shown in the panels above.\n"
+            "Click 'WATCH LIVE TYPING' to see the animation, or 'RUN IN REAL LIFE' to execute it.\n"
+            "(Desktop GUI - for mobile use the mobile.html PWA)")
+        self.output_box.see("0.0")
+
+        self.update_idletasks()  # Force the UI to refresh immediately so user sees the change
 
     def animate_code(self):
         if not self.current_code:
