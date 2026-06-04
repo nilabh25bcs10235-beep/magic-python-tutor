@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>MAGIC TUTOR</title>
+    <meta name="description" content="Python concepts explained like you're 5 — with real-world stories, live code animations, and runnable examples.">
+    <style>
+        :root {
+            --bg: #0a0a1f;
+            --accent-cyan: #00f0ff;
+            --accent-magenta: #ff00cc;
+            --accent-green: #00ff9f;
+            --text: #e8e8ff;
+            --panel: #16162e;
+            --code-bg: #12122a;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: 'Consolas', 'Courier New', monospace;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+        .header {
+            background: #05050f;
+            padding: 12px 16px;
+            text-align: center;
+            border-bottom: 3px solid var(--accent-green);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 42px;
+            font-weight: 900;
+            letter-spacing: 3px;
+            color: var(--accent-cyan);
+            text-shadow: 0 0 10px rgba(0, 240, 255, 0.6);
+        }
+        .header .tagline {
+            font-size: 13px;
+            color: var(--accent-magenta);
+            margin-top: 4px;
+            letter-spacing: 1px;
+        }
+        .container {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 16px;
+        }
+        .section {
+            background: var(--panel);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+            border: 1px solid #222244;
+        }
+        .section-title {
+            font-size: 14px;
+            color: var(--accent-cyan);
+            margin: 0 0 8px 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .big-button {
+            display: block;
+            width: 100%;
+            background: var(--accent-magenta);
+            color: white;
+            border: none;
+            padding: 14px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 8px;
+            margin: 8px 0;
+            cursor: pointer;
+            text-align: center;
+        }
+        .big-button:active {
+            transform: scale(0.98);
+        }
+        .lesson-btn {
+            background: #1f1f3a;
+            color: white;
+            border: 1px solid #333355;
+            padding: 12px;
+            margin: 6px 0;
+            border-radius: 8px;
+            font-size: 15px;
+            text-align: left;
+            width: 100%;
+            cursor: pointer;
+        }
+        .lesson-btn:hover {
+            background: #2a2a4a;
+        }
+        .input-area {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .input-area input {
+            flex: 1;
+            background: var(--code-bg);
+            border: 1px solid #333355;
+            color: var(--text);
+            padding: 12px;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 16px;
+        }
+        .code-box {
+            background: var(--code-bg);
+            border-radius: 8px;
+            padding: 12px;
+            font-family: 'Consolas', monospace;
+            font-size: 13px;
+            white-space: pre-wrap;
+            overflow-x: auto;
+            border: 1px solid #222244;
+            min-height: 120px;
+            position: relative;
+        }
+        .output-box {
+            background: #05050f;
+            color: var(--accent-green);
+            padding: 12px;
+            border-radius: 8px;
+            font-family: 'Consolas', monospace;
+            font-size: 13px;
+            white-space: pre-wrap;
+            min-height: 80px;
+            border: 1px solid #222244;
+        }
+        .animate-btn {
+            background: var(--accent-cyan);
+            color: black;
+            font-weight: bold;
+            padding: 8px 14px;
+            border: none;
+            border-radius: 6px;
+            margin: 8px 0;
+            cursor: pointer;
+        }
+        .run-btn {
+            background: var(--accent-green);
+            color: black;
+            font-weight: bold;
+            padding: 10px 16px;
+            border: none;
+            border-radius: 8px;
+            margin-top: 8px;
+            width: 100%;
+            cursor: pointer;
+        }
+        .lesson-header {
+            font-size: 18px;
+            color: var(--accent-cyan);
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+        .back-btn {
+            background: transparent;
+            border: 1px solid var(--accent-cyan);
+            color: var(--accent-cyan);
+            padding: 6px 12px;
+            border-radius: 6px;
+            margin-bottom: 12px;
+            cursor: pointer;
+        }
+        .hidden { display: none; }
+        .status {
+            font-size: 12px;
+            color: #8888aa;
+            text-align: center;
+            margin-top: 8px;
+        }
+        .neon {
+            text-shadow: 0 0 8px currentColor;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1 class="neon">MAGIC TUTOR</h1>
+        <div class="tagline">Python • Real World • Live Animation • No Boring Theory</div>
+    </div>
+
+    <div class="container">
+        <!-- Home / Lessons -->
+        <div id="home-screen">
+            <div class="section">
+                <div class="section-title">Choose a Lesson</div>
+                <button class="lesson-btn" onclick="loadLesson('append')">list.append() — Adding to a list</button>
+                <button class="lesson-btn" onclick="loadLesson('pop')">list.pop() — Undo button</button>
+                <button class="lesson-btn" onclick="loadLesson('dict')">Dictionaries + .get()</button>
+                <button class="lesson-btn" onclick="loadLesson('split')">split() + join()</button>
+            </div>
+
+            <div class="section">
+                <div class="section-title">Ask Anything</div>
+                <div class="input-area">
+                    <input id="ask-input" type="text" placeholder="e.g. how do loops work in games" onkeypress="if(event.key === 'Enter') askAnything()">
+                    <button onclick="askAnything()" style="background:#ff00cc;color:white;border:none;padding:12px 18px;border-radius:8px;font-weight:bold;">ASK</button>
+                </div>
+                <div class="status">Works offline after first visit • Tap the menu to install as an app</div>
+            </div>
+        </div>
+
+        <!-- Lesson View -->
+        <div id="lesson-screen" class="hidden">
+            <button class="back-btn" onclick="showHome()">← Back to lessons</button>
+            
+            <div class="lesson-header" id="lesson-title"></div>
+            
+            <div class="section">
+                <div class="section-title">🧸 The Story (like you're 5)</div>
+                <div id="lesson-story" style="white-space: pre-line;"></div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">🌍 Real World Mission</div>
+                <div id="lesson-mission" style="color:#00ff9f; font-weight:600;"></div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">💻 The Magic Code</div>
+                <div id="lesson-code" class="code-box"></div>
+                
+                <button class="animate-btn" onclick="animateCode()">▶ WATCH LIVE TYPING</button>
+                
+                <button class="run-btn" onclick="runDemo()">⚡ RUN IN REAL LIFE</button>
+                
+                <div id="lesson-output" class="output-box" style="margin-top:8px; display:none;"></div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">🎓 What You Learned</div>
+                <div id="lesson-recap" style="white-space: pre-line;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Lesson data (same spirit as desktop version)
+        const LESSONS = {
+            "append": {
+                title: "list.append() — Adding things to a list",
+                story: "Imagine your mom says 'Go write down what we need from the store'.\nYou have a blank piece of paper (an empty list). Every time you think of something, you write it at the bottom. That's append!",
+                mission: "Shopping List Helper for Mom — You're helping your family make a smart shopping list!",
+                code: `# Real Life Mission: Shopping List Helper for Mom
+shopping_list = []
+print("Let's make mom's shopping list!")
+print("Current list:", shopping_list)
+
+shopping_list.append("milk")
+shopping_list.append("eggs")
+shopping_list.append("bread")
+shopping_list.append("chocolate cookies")
+
+print("\\nAll done! Here's what we need to buy:")
+print(shopping_list)
+print(f"\\nWe have {len(shopping_list)} things to buy.")`,
+                recap: "1. [] creates an empty list\n2. .append(item) adds at the end\n3. Real life: todo lists, playlists, game inventory",
+                output: "Let's make mom's shopping list!\nCurrent list: []\n\nAll done! Here's what we need to buy:\n['milk', 'eggs', 'bread', 'chocolate cookies']\n\nWe have 4 things to buy."
+            },
+            "pop": {
+                title: "list.pop() — Taking the last thing out",
+                story: "Think of a magic top hat. The last thing you put in is the first you can grab. pop() removes the LAST item you added. Perfect for undo buttons!",
+                mission: "Undo Button for a Kids Drawing App",
+                code: `# Undo Button for a Kids Drawing App
+drawing_history = []
+drawing_history.append("red circle")
+drawing_history.append("blue square")
+drawing_history.append("green triangle")
+
+print("Shapes drawn:", drawing_history)
+last = drawing_history.pop()
+print("UNDO! Removed:", last)
+print("Now left:", drawing_history)`,
+                recap: "pop() removes the most recent item. Great for stacks and undo features.",
+                output: "Shapes drawn: ['red circle', 'blue square', 'green triangle']\nUNDO! Removed: green triangle\nNow left: ['red circle', 'blue square']"
+            },
+            "dict": {
+                title: "Dictionaries + .get() — Instant lookup",
+                story: "A dictionary is like a magic phonebook. Say the name and you instantly get the value. .get() is the safe way to ask without crashing.",
+                mission: "Magic Price Look-up for a Toy Shop",
+                code: `toy_prices = {"teddy bear": 12, "robot": 25, "ball": 5}
+print("How much is a robot?", toy_prices.get("robot"))
+print("Dragon price?", toy_prices.get("dragon", "Not in stock"))`,
+                recap: "dict = {key: value} gives instant lookup by name. .get() is safe.",
+                output: "How much is a robot? 25\nDragon price? Not in stock"
+            },
+            "split": {
+                title: "split() + join() — Breaking and gluing text",
+                story: "split() cuts a sentence into words with scissors. join() glues them back together with any glue you choose.",
+                mission: "Lemonade Stand Sales Report",
+                code: `raw = "Mon:23,Tue:31,Wed:18"
+parts = raw.split(",")
+print("Broken:", parts)
+print("Total:", sum(int(p.split(":")[1]) for p in parts))`,
+                recap: "split() turns text into lists. join() turns lists into text.",
+                output: "Broken: ['Mon:23', 'Tue:31', 'Wed:18']\nTotal: 72"
+            }
+        };
+
+        let currentLesson = null;
+        let currentCode = "";
+
+        function showHome() {
+            document.getElementById('home-screen').classList.remove('hidden');
+            document.getElementById('lesson-screen').classList.add('hidden');
+        }
+
+        function loadLesson(key) {
+            currentLesson = LESSONS[key];
+            currentCode = currentLesson.code;
+
+            document.getElementById('home-screen').classList.add('hidden');
+            document.getElementById('lesson-screen').classList.remove('hidden');
+
+            document.getElementById('lesson-title').textContent = currentLesson.title;
+            document.getElementById('lesson-story').textContent = currentLesson.story;
+            document.getElementById('lesson-mission').textContent = currentLesson.mission;
+            document.getElementById('lesson-code').textContent = currentLesson.code;
+            document.getElementById('lesson-recap').textContent = currentLesson.recap;
+            document.getElementById('lesson-output').style.display = 'none';
+        }
+
+        function animateCode() {
+            if (!currentCode) return;
+            const codeEl = document.getElementById('lesson-code');
+            codeEl.textContent = '';
+            let i = 0;
+            const interval = setInterval(() => {
+                if (i < currentCode.length) {
+                    codeEl.textContent += currentCode[i];
+                    i++;
+                } else {
+                    clearInterval(interval);
+                }
+            }, 18);
+        }
+
+        function runDemo() {
+            if (!currentLesson) return;
+            const out = document.getElementById('lesson-output');
+            out.style.display = 'block';
+            out.textContent = currentLesson.output + "\n\n✅ Code executed successfully (simulated on mobile)";
+        }
+
+        function askAnything() {
+            const input = document.getElementById('ask-input').value.trim().toLowerCase();
+            if (!input) return;
+
+            // Simple keyword matching for mobile version
+            let key = null;
+            if (input.includes('append') || input.includes('add to list')) key = 'append';
+            else if (input.includes('pop') || input.includes('undo')) key = 'pop';
+            else if (input.includes('dict') || input.includes('dictionary') || input.includes('lookup')) key = 'dict';
+            else if (input.includes('split') || input.includes('join')) key = 'split';
+            else if (input.includes('loop') || input.includes('for ')) {
+                // fallback generic
+                alert("For loops: We repeat actions for each item in a list. Great for games and processing data!");
+                document.getElementById('ask-input').value = '';
+                return;
+            } else {
+                alert("I don't have a pre-made lesson for that yet, but the idea is the same: use Python to solve real problems with lists, loops, and reusable code!");
+                document.getElementById('ask-input').value = '';
+                return;
+            }
+
+            document.getElementById('ask-input').value = '';
+            loadLesson(key);
+        }
+
+        // Make it feel more like an installed app
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js').catch(() => {});
+            });
+        }
+
+        // Keyboard support
+        document.addEventListener('keydown', function(e) {
+            if (e.key === '/' && document.activeElement.tagName === 'BODY') {
+                e.preventDefault();
+                document.getElementById('ask-input').focus();
+            }
+        });
+
+        console.log('%c[MAGIC TUTOR] Mobile PWA ready. Add to home screen for best experience!', 'color:#00f0ff');
+    </script>
+</body>
+</html>

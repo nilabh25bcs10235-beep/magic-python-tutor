@@ -33,6 +33,7 @@ This gives you the full colorful desktop GUI app with the big **MAGIC TUTOR** he
 - **It actually runs**: "RUN IN REAL LIFE" button executes the code and shows output in a console panel
 - **Beautiful standalone UI**: Dark tekky colors (cyan/magenta/green), big "MAGIC TUTOR" header, modern widgets
 - **Save real files**: Every example is saved as a proper .py you can open and modify later
+- **Mobile PWA (no terminal on phone)**: Open `mobile.html` in your phone browser → "Add to Home Screen". Fully works offline.
 - **Fully usable from GitHub**: `pip install git+...` then just run `magic-tutor` to launch the desktop app
 
 ## Quick Start (from GitHub)
@@ -78,13 +79,16 @@ The `pyproject.toml` lists it as a dependency, so `pip install` from the repo wi
 
 ```
 magic-python-tutor/
-├── magic_tutor.py      # The main interactive app
-├── magic_typer.py      # The reusable magic typing + cursor + rich animation engine
-├── pyproject.toml      # Packaging + console script (magic-tutor command)
+├── gui.py              # Desktop GUI app (customtkinter) — launched by `magic-tutor`
+├── mobile.html         # Mobile PWA version (installable on phone home screen, no terminal)
+├── manifest.json       # PWA manifest for mobile install
+├── sw.js               # Service worker for offline PWA
+├── magic_tutor.py      # Original rich terminal version (fallback)
+├── magic_typer.py      # Reusable typing animation engine
+├── pyproject.toml      # Packaging + entry point
 ├── README.md
 ├── LICENSE
-├── .gitignore
-└── examples/           # Auto-generated when you use the app (gitignored)
+└── examples/           # Generated example scripts (gitignored)
 ```
 
 ## Making it your own / contributing ideas
@@ -98,6 +102,39 @@ magic-python-tutor/
 Built to teach Python concepts (and dev ideas) in the most accessible, visual, "build it yourself and watch it run" way possible — exactly like explaining to a 5-year-old while still being real and useful.
 
 Enjoy learning by doing!
+
+---
+
+## Install on Mobile (Android / iOS) — No Terminal Needed on the Phone
+
+You can run a mobile-friendly version of **MAGIC TUTOR** directly on your phone or tablet as a real app icon, completely offline after the first load.
+
+### Steps (takes 30 seconds)
+
+1. On your **phone**, open this link in Chrome (Android) or Safari (iOS):
+   - Direct file: https://raw.githubusercontent.com/nilabh25bcs10235-beep/magic-python-tutor/main/mobile.html
+
+2. Once it loads, tap the **menu / share button** in your browser:
+   - Android Chrome → "Add to Home screen"
+   - iOS Safari → "Add to Home Screen"
+
+3. It will appear as a normal app with the big **MAGIC TUTOR** header. Works fully offline.
+
+### What you get on mobile
+- Big tekky "MAGIC TUTOR" header
+- Same real-world stories and lessons
+- "Watch Live Typing" animation (JavaScript version)
+- "Run in Real Life" shows the expected output
+- "Ask Anything" works with simple matching
+
+**Note**: The full Python code execution is desktop-only (for safety and power). On mobile you get the explanations + simulated output, which is perfect for learning on the go.
+
+### Advanced: Full local offline (optional)
+If you want it completely local without using GitHub:
+- Download `mobile.html` + `manifest.json` + `sw.js` from the repo onto your phone storage.
+- Open `mobile.html` in your browser and add to home screen.
+
+This gives you a true local install experience with zero terminal commands on the mobile device itself.
 
 ---
 

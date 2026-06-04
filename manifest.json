@@ -1,0 +1,16 @@
+{
+  "name": "MAGIC TUTOR",
+  "short_name": "MAGIC TUTOR",
+  "description": "Python concepts explained like you're 5 — real-world stories, live code animations, and runnable examples.",
+  "start_url": "mobile.html",
+  "display": "standalone",
+  "background_color": "#0a0a1f",
+  "theme_color": "#00f0ff",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🪄%3C/text%3E%3C/svg%3E",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    }
+  ]
+}
