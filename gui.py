@@ -220,6 +220,8 @@ if user_response.lower() == "yes":
         base_recap = "input() gets text from the user. Combine with if/else for decisions."
 
     elif any(w in q for w in ["range", "negative step", "reverse index", "traversal", "backward", "negative"]):
+        base_story = f"You asked about '{safe_query}'. Here's a real-world way to traverse a list backwards by index using range with a negative step (no need to reverse the list first)."
+        base_mission = f"Reverse index traversal example tailored to your question: {safe_query}"
         code = f'''# Based on your question: {safe_query}
 # Real Life: Reverse index traversal (e.g. process list from last to first without reversing it)
 tasks = ["task1", "task2", "task3", "task4"]
