@@ -11,15 +11,19 @@ import customtkinter as ctk
 from tkinter import messagebox
 import os
 import subprocess
+import sys
 import tempfile
 import threading
 import time
 
 # Hide the console window on Windows when launched directly (clean GUI experience)
+# Only do this if there's actually a console attached (to avoid issues under gui launcher)
 if os.name == "nt":
     try:
         import ctypes
-        ctypes.windll.user32.ShowWindow(ctypes.windll.kernel32.GetConsoleWindow(), 0)
+        console_window = ctypes.windll.kernel32.GetConsoleWindow()
+        if console_window:
+            ctypes.windll.user32.ShowWindow(console_window, 0)  # SW_HIDE
     except Exception:
         pass
 
@@ -197,9 +201,6 @@ class MagicTutorApp(ctk.CTk):
     def __init__(self):
         super().__init__()
 
-        # Start hidden for clean launch (no flash or console garbage)
-        self.withdraw()
-
         self.title("MAGIC TUTOR")
         self.geometry("1100x720")
         self.minsize(900, 600)
@@ -212,11 +213,6 @@ class MagicTutorApp(ctk.CTk):
 
         self._build_ui()
         self._show_welcome()
-
-        # Show the clean window
-        self.deiconify()
-        self.lift()
-        self.focus_force()
 
     def _build_ui(self):
         # === TOP HEADER - BIG TEKKY "MAGIC TUTOR" ===
@@ -514,8 +510,51 @@ class MagicTutorApp(ctk.CTk):
         self.mainloop()
 
 def main():
-    app = MagicTutorApp()
-    app.run()
+    # Ensure dependency is present (in case of broken install)
+    try:
+        import customtkinter  # noqa
+    except ImportError:
+        print("ERROR: customtkinter is required for the GUI.", file=sys.stderr)
+        print("Please run: pip install customtkinter", file=sys.stderr)
+        try:
+            import tkinter.messagebox as mb
+            import tkinter as tk
+            r = tk.Tk(); r.withdraw()
+            mb.showerror("MAGIC TUTOR", "customtkinter is not installed.\n\nRun this in your terminal:\npip install customtkinter\n\nThen try 'magic-tutor' again.")
+            r.destroy()
+        except:
+            pass
+        sys.exit(1)
+
+    try:
+        app = MagicTutorApp()
+        app.run()
+    except Exception:
+        import traceback
+        import sys
+        error_msg = traceback.format_exc()
+        # Write to log file so user can see what went wrong even if no console
+        try:
+            with open("magic_tutor_crash.log", "w", encoding="utf-8") as f:
+                f.write("MAGIC TUTOR crashed on startup:\n\n")
+                f.write(error_msg)
+            # Try to show a message box if possible
+            import tkinter as tk
+            from tkinter import messagebox
+            root = tk.Tk()
+            root.withdraw()
+            messagebox.showerror(
+                "MAGIC TUTOR - Startup Error",
+                f"The app failed to start.\n\n"
+                f"A crash log has been saved to:\n{os.path.abspath('magic_tutor_crash.log')}\n\n"
+                f"Error summary:\n{error_msg.splitlines()[-1] if error_msg else 'Unknown error'}"
+            )
+            root.destroy()
+        except Exception:
+            pass
+        # Re-raise so launcher sees the error
+        print("MAGIC TUTOR crashed. See magic_tutor_crash.log for details.", file=sys.stderr)
+        raise
 
 if __name__ == "__main__":
     main()
