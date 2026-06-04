@@ -69,7 +69,11 @@ print(shopping_list)
 print(f"\\nWe have {len(shopping_list)} things to buy.")
 print("First thing to find in the store:", shopping_list[0])''',
         "recap": "1. [] creates an empty list (blank paper)\n2. .append(item) adds the item at the very end\n3. The list remembers the order you added things\n4. Real life: todo lists, high scores, chat messages, inventory in games, playlist songs",
-        "filename": "shopping_list_for_mom.py"
+        "filename": "shopping_list_for_mom.py",
+        "concept_uses": [
+            {"snippet": "shopping_list.append(\"milk\")", "explanation": "This line uses .append() to add 'milk' to the end of the list. The list grows by one item."},
+            {"snippet": "shopping_list.append(\"chocolate cookies\")", "explanation": "Another append. Notice how we can keep adding items one by one without knowing the final size in advance."}
+        ]
     },
     "pop": {
         "title": "list.pop() — Taking the last thing out (Undo!)",
@@ -90,7 +94,11 @@ last_shape = drawing_history.pop()
 print(f"\\nUNDO! Removed the last shape: {last_shape}")
 print("Drawing now looks like this:", drawing_history)''',
         "recap": "pop() is like 'take back the most recent thing I did'.\nIt returns the item so you can use it.\nReal life: browser back button, Ctrl+Z, card games, function call stack.",
-        "filename": "drawing_app_undo.py"
+        "filename": "drawing_app_undo.py",
+        "concept_uses": [
+            {"snippet": "last_shape = drawing_history.pop()", "explanation": "pop() removes and returns the LAST item added (LIFO). This is the core of undo functionality."},
+            {"snippet": "print(f\"\\nUNDO! Removed the last shape: {last_shape}\")", "explanation": "We capture what was removed so we could restore it if needed. This demonstrates using the returned value from pop()."}
+        ]
     },
     "dict": {
         "title": "Dictionaries (dict) + .get() — Instant lookup by name",
@@ -112,7 +120,11 @@ print(f"How much is a {item}?", toy_prices.get(item, "Not in stock"))
 price = toy_prices.get("dragon", "Sorry, we don't have that today")
 print("Dragon price:", price)''',
         "recap": "dict = {key: value} — super fast lookup by name\n.get(key, default) is safe and friendly\nReal life: phone contacts, game settings, configuration, counting words.",
-        "filename": "toy_shop_prices.py"
+        "filename": "toy_shop_prices.py",
+        "concept_uses": [
+            {"snippet": "item = \"robot\"\nprint(f\"How much is a {item}?\", toy_prices.get(item, \"Not in stock\"))", "explanation": "We use the key 'robot' to instantly retrieve the value. No looping through the entire dictionary."},
+            {"snippet": "price = toy_prices.get(\"dragon\", \"Sorry, we don't have that today\")", "explanation": ".get() safely handles missing keys by returning the default instead of crashing (KeyError)."}
+        ]
     },
     "split": {
         "title": "str.split() + .join() — Breaking & gluing text",
@@ -135,7 +147,12 @@ print(f"\\n🏆 Total cups sold this week: {total}")
 best = " and ".join(["Tuesday", "Thursday"])
 print(f"Best days were: {best}")''',
         "recap": "split(separator) cuts a string into a list\n.join(glue) turns a list of strings into one string\nReal life: reading CSV, parsing commands, cleaning user input.",
-        "filename": "lemonade_stand_report.py"
+        "filename": "lemonade_stand_report.py",
+        "concept_uses": [
+            {"snippet": "days_data = raw_sales.split(\",\")", "explanation": "split(\",\") breaks the long CSV-like string into a list of 'day:count' pieces. This is the first step in parsing structured text."},
+            {"snippet": "day, cups = day_info.split(\":\")", "explanation": "Nested split on ':' extracts the day name and the number. We turn text data into usable variables."},
+            {"snippet": "report = \" and \".join(best_days)", "explanation": "join() glues a list of strings back together with a custom separator. The reverse of split."}
+        ]
     },
 }
 
@@ -162,6 +179,7 @@ def get_lesson(query: str):
     filename = "custom_example.py"
     title = f"Custom example for: {safe_query}"
     code = ""
+    concept_uses = []  # populated below for "highlight + explain the concept in the script"
 
     # Expanded concept detectors (much more than before)
     concept = None
@@ -219,6 +237,10 @@ print("\\nThis is useful for undo stacks, checking palindromes, or last-to-first
         base_story = f"You asked about '{safe_query}'. Instead of reversing the whole list (which costs time & memory), we walk backwards using range with a negative step."
         base_mission = f"Build an efficient reverse processor for {safe_query}"
         base_recap = "range(len-1, -1, -1) lets you traverse backwards by index. Very useful when you need the original order preserved but want to process from the end."
+        concept_uses = [
+            {"snippet": "for i in range(len(tasks)-1, -1, -1):", "explanation": "This is the heart of reverse traversal. The negative step (-1) makes the index go 4,3,2,1,0 instead of 0 to 4."},
+            {"snippet": "print(f\"Index {i} (from end): {tasks[i]}\")", "explanation": "We use the computed index i to access the list from the end. No list.reverse() or slicing [::-1] needed."}
+        ]
 
     elif concept == "comprehension":
         code = f'''# Dynamic example generated for your question: {safe_query}
@@ -326,13 +348,19 @@ print(f"\\nThis demonstrates building something practical with {concept_name}.")
         base_mission = f"Build a mini tool that solves a problem using the concept from your question"
         base_recap = f"We took the idea you asked about and built a working script that *solves a similar real problem* and demonstrates the concept in action. This is how concepts become useful software."
 
+    if not concept_uses:
+        concept_uses = [
+            {"snippet": "# the generated code above", "explanation": f"The script was dynamically created to show how to use the concept from your question ('{safe_query}') in a real, runnable program."}
+        ]
+
     return {
         "title": title,
         "story": base_story,
         "mission": base_mission,
         "code": code,
         "recap": base_recap,
-        "filename": filename
+        "filename": filename,
+        "concept_uses": concept_uses
     }
 
 # =============================================================================
@@ -457,6 +485,12 @@ class MagicTutorApp(ctk.CTk):
         self.code_box.pack(fill="both", expand=True, pady=(2, 6))
         self.code_box.delete("0.0", "end")  # ensure clean on startup
 
+        # New section: Live concept highlighting + explanation inside the script
+        ctk.CTkLabel(center, text="💡 How the concept is used in this script (highlighted + explained)", font=("Consolas", 11), text_color=ACCENT_CYAN).pack(anchor="w", pady=(8, 2))
+        self.concept_uses_box = ctk.CTkTextbox(center, height=90, fg_color=PANEL_BG, text_color=TEXT_LIGHT, font=("Consolas", 10))
+        self.concept_uses_box.pack(fill="x", pady=(2, 6))
+        self.concept_uses_box.delete("0.0", "end")
+
         # Action buttons
         actions = ctk.CTkFrame(center, fg_color="transparent")
         actions.pack(fill="x", pady=4)
@@ -551,6 +585,7 @@ class MagicTutorApp(ctk.CTk):
                 "Use the 'WATCH LIVE TYPING' and 'RUN IN REAL LIFE' buttons to interact with the code.")
             self.output_box.see("0.0")
 
+            self._display_concept_uses(lesson)
             self.update_idletasks()
         except Exception as e:
             self.output_box.delete("0.0", "end")
@@ -620,7 +655,26 @@ class MagicTutorApp(ctk.CTk):
             "(Desktop GUI - for mobile use the mobile.html PWA)")
         self.output_box.see("0.0")
 
+        self._display_concept_uses(lesson)
         self.update_idletasks()  # Force the UI to refresh immediately so user sees the change
+
+    def _display_concept_uses(self, lesson):
+        """Show the 'highlighting and explaining the concept in the script' part.
+        This makes the 'uses in script' educational: snippets + explanations.
+        """
+        self.concept_uses_box.delete("0.0", "end")
+        uses = lesson.get("concept_uses", [])
+        if not uses:
+            self.concept_uses_box.insert("0.0", "No specific highlights for this lesson.")
+            return
+
+        for i, use in enumerate(uses, 1):
+            snippet = use.get("snippet", "")
+            explanation = use.get("explanation", "")
+            self.concept_uses_box.insert("end", f"{i}. In the script:\n")
+            self.concept_uses_box.insert("end", f"   {snippet}\n")
+            self.concept_uses_box.insert("end", f"   → {explanation}\n\n")
+        self.concept_uses_box.see("0.0")
 
     def animate_code(self):
         if not self.current_code:
@@ -638,6 +692,8 @@ class MagicTutorApp(ctk.CTk):
                 self.after(TYPING_DELAY_MS, type_char, index + 1)
             else:
                 self.animate_btn.configure(state="normal", text="▶ WATCH LIVE TYPING")
+                if self.current_lesson:
+                    self._display_concept_uses(self.current_lesson)
 
         type_char()
 
