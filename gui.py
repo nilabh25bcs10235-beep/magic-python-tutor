@@ -491,6 +491,14 @@ class MagicTutorApp(ctk.CTk):
         self.concept_uses_box.pack(fill="x", pady=(2, 6))
         self.concept_uses_box.delete("0.0", "end")
 
+        # Wait status with timer (like Grok's thinking timer)
+        self.wait_frame = ctk.CTkFrame(center, fg_color="transparent")
+        self.wait_frame.pack(fill="x", pady=(4, 2))
+        self.wait_message = ctk.CTkLabel(self.wait_frame, text="", font=("Consolas", 11), text_color=ACCENT_CYAN)
+        self.wait_message.pack(side="left")
+        self.wait_timer_label = ctk.CTkLabel(self.wait_frame, text="", font=("Consolas", 11, "bold"), text_color=ACCENT_MAGENTA)
+        self.wait_timer_label.pack(side="left", padx=8)
+
         # Action buttons
         actions = ctk.CTkFrame(center, fg_color="transparent")
         actions.pack(fill="x", pady=4)
@@ -535,11 +543,11 @@ class MagicTutorApp(ctk.CTk):
         self.query_entry.delete(0, "end")  # ensure clean on startup
         self.query_entry.bind("<Return>", lambda e: self.ask_free())
 
-        ask_btn = ctk.CTkButton(
+        self.ask_btn = ctk.CTkButton(
             input_bar, text="ASK MAGIC TUTOR", fg_color=ACCENT_MAGENTA, text_color="white",
             font=("Consolas", 12, "bold"), command=self.ask_free
         )
-        ask_btn.pack(side="left", padx=6)
+        self.ask_btn.pack(side="left", padx=6)
 
     def _show_welcome(self):
         self.topic_label.configure(text="🪄 MAGIC TUTOR — What do you want to master today?")
@@ -553,6 +561,8 @@ class MagicTutorApp(ctk.CTk):
                               "• Hit 'RUN IN REAL LIFE' to actually execute it\n\n"
                               "All examples are saved in the examples/ folder.")
         self.recap_box.insert("0.0", "Real code.\nReal stories.\nReal execution.\n\nNo boring theory — only things you can actually use.")
+        self.wait_message.configure(text="")
+        self.wait_timer_label.configure(text="")
         self.update_idletasks()  # force clean paint
 
     def load_lesson(self, key: str):
@@ -585,6 +595,8 @@ class MagicTutorApp(ctk.CTk):
                 "Use the 'WATCH LIVE TYPING' and 'RUN IN REAL LIFE' buttons to interact with the code.")
             self.output_box.see("0.0")
 
+            self.wait_message.configure(text="")
+            self.wait_timer_label.configure(text="")
             self._display_concept_uses(lesson)
             self.update_idletasks()
         except Exception as e:
@@ -598,11 +610,15 @@ class MagicTutorApp(ctk.CTk):
         if query:
             if len(query) > 200:
                 query = query[:197] + "..."
-            self.output_box.delete("0.0", "end")
-            self.output_box.insert("0.0", f"🔍 Searching knowledge base for '{query}' in the background...\nGenerating a real-world script that uses the concept to solve a problem...")
+            # Disable during processing
+            self.ask_btn.configure(state="disabled")
+            self.query_entry.configure(state="disabled")
+            self.wait_message.configure(text="Please wait for results...")
+            self.wait_timer_label.configure(text="0.0s")
+            self._wait_start_time = time.time()
+            self._update_wait_timer()
             self.update_idletasks()
-            time.sleep(0.65)
-            self._process_query(query)
+            self.after(650, lambda q=query: self._finish_wait_and_process(q))
 
     def ask_free(self):
         query = self.query_entry.get().strip()
@@ -610,17 +626,38 @@ class MagicTutorApp(ctk.CTk):
             # Prevent extremely long inputs from causing display/loop issues
             if len(query) > 200:
                 query = query[:197] + "..."
-            self.output_box.delete("0.0", "end")
-            self.output_box.insert("0.0", f"🔍 Searching knowledge base for '{query}' in the background...\nGenerating a real-world script that uses the concept to solve a problem...")
+            # Disable input during processing
+            self.ask_btn.configure(state="disabled")
+            self.query_entry.configure(state="disabled")
+            # Neutral wait message + start timer
+            self.wait_message.configure(text="Please wait for results...")
+            self.wait_timer_label.configure(text="0.0s")
+            self._wait_start_time = time.time()
+            self._update_wait_timer()
             self.update_idletasks()
-            # Small delay to simulate "background search"
-            time.sleep(0.65)
-            try:
-                self._process_query(query)
-            except Exception as e:
-                self.output_box.delete("0.0", "end")
-                self.output_box.insert("0.0", f"Error processing: {str(e)}")
-            self.query_entry.delete(0, "end")
+            # Schedule processing after short "thinking" time (non-blocking)
+            self.after(650, lambda q=query: self._finish_wait_and_process(q))
+
+    def _update_wait_timer(self):
+        if hasattr(self, '_wait_start_time'):
+            elapsed = time.time() - self._wait_start_time
+            self.wait_timer_label.configure(text=f"{elapsed:.1f}s")
+            self.after(100, self._update_wait_timer)
+
+    def _finish_wait_and_process(self, query):
+        # Stop timer
+        if hasattr(self, '_wait_start_time'):
+            del self._wait_start_time
+        self.wait_message.configure(text="")
+        self.wait_timer_label.configure(text="")
+        try:
+            self._process_query(query)
+        except Exception as e:
+            self.output_box.delete("0.0", "end")
+            self.output_box.insert("0.0", f"Error processing: {str(e)}")
+        self.query_entry.delete(0, "end")
+        self.ask_btn.configure(state="normal")
+        self.query_entry.configure(state="normal")
 
     def _process_query(self, query: str):
         lesson = get_lesson(query)
