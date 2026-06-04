@@ -3,9 +3,11 @@
 A beautiful, interactive, running application that explains ANY Python or development concept
 like you're 5 years old — using real-world problem solving, live code animations, and running code.
 
-Run it with:
-    cd python_magic_5yo
-    python magic_tutor.py
+Terminal version (for the old rich TUI experience).
+The main application is now the colorful GUI (run with `magic-tutor` after install).
+
+For GUI (recommended):
+    magic-tutor
 
 It takes your questions in natural language and builds animated, runnable real-life examples every time.
 """

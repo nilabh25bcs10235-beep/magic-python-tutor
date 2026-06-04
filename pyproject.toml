@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "magic-python-tutor"
 version = "0.1.0"
-description = "An interactive terminal app that teaches Python and dev concepts like you're 5 — with real-world stories, live code typing animations, and runnable examples."
+description = "MAGIC TUTOR - A standalone colorful desktop app that teaches Python & dev concepts like you're 5, with real-world stories, live code typing animations, and runnable examples."
 readme = "README.md"
 requires-python = ">=3.8"
 license = {text = "MIT"}
@@ -13,12 +13,14 @@ authors = [
   {name = "nilabh25bcs10235-beep"}
 ]
 dependencies = [
-  "rich>=13.0"
+  "rich>=13.0",
+  "customtkinter>=5.2.0"
 ]
 keywords = ["python", "education", "tutor", "teaching", "cli", "rich", "beginner", "kids"]
 classifiers = [
   "Development Status :: 4 - Beta",
-  "Environment :: Console",
+  "Environment :: X11 Applications :: GTK",
+  "Environment :: Win32 (MS Windows)",
   "Intended Audience :: Education",
   "License :: OSI Approved :: MIT License",
   "Operating System :: OS Independent",
@@ -29,10 +31,11 @@ classifiers = [
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Topic :: Education",
+  "Topic :: Software Development :: User Interfaces",
 ]
 
 [project.scripts]
-magic-tutor = "magic_tutor:main"
+magic-tutor = "gui:main"
 
 [project.urls]
 Homepage = "https://github.com/nilabh25bcs10235-beep/magic-python-tutor"
@@ -40,4 +43,4 @@ Repository = "https://github.com/nilabh25bcs10235-beep/magic-python-tutor"
 Issues = "https://github.com/nilabh25bcs10235-beep/magic-python-tutor/issues"
 
 [tool.setuptools]
-py-modules = ["magic_tutor", "magic_typer"]
+py-modules = ["magic_tutor", "magic_typer", "gui"]
