@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "magic-python-tutor"
+version = "0.1.0"
+description = "An interactive terminal app that teaches Python and dev concepts like you're 5 — with real-world stories, live code typing animations, and runnable examples."
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [
+  {name = "nil6942"}
+]
+dependencies = [
+  "rich>=13.0"
+]
+keywords = ["python", "education", "tutor", "teaching", "cli", "rich", "beginner", "kids"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Environment :: Console",
+  "Intended Audience :: Education",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Education",
+]
+
+[project.scripts]
+magic-tutor = "magic_tutor:main"
+
+[project.urls]
+Homepage = "https://github.com/nil6942/magic-python-tutor"
+Repository = "https://github.com/nil6942/magic-python-tutor"
+Issues = "https://github.com/nil6942/magic-python-tutor/issues"
+
+[tool.setuptools]
+py-modules = ["magic_tutor", "magic_typer"]
