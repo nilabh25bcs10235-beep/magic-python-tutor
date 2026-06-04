@@ -140,22 +140,24 @@ print(f"Best days were: {best}")''',
 }
 
 def get_lesson(query: str):
-    """Smart fallback + known lessons. Now generates code based on the user's specific question."""
+    """Smart fallback + known lessons. Generates code, story, mission, and recap based on the user's specific question."""
     q = query.lower().strip()
     safe_query = query[:80] + "..." if len(query) > 80 else query
 
-    # Exact known lessons first
+    # Exact known lessons first (these have their own fixed nice stories)
     for key in LESSONS:
         if key in q or LESSONS[key]["title"].lower().split()[0] in q:
             return LESSONS[key]
 
-    # Dynamic code generation based on query keywords for "any" question
+    # Base dynamic text that always mentions the user's query
+    base_story = f"You asked about '{safe_query}'. Here's a real-world Python example tailored to that idea."
+    base_mission = f"Building a helper based on your question about {safe_query}"
+    base_recap = "Python lets you solve real problems with the right tools (lists, functions, loops, etc.). Tailored to what you asked."
+    filename = "custom_example.py"
+
+    # Dynamic code generation based on query keywords
     code = ""
     title = f"Custom example for: {safe_query}"
-    story = f"You asked about '{safe_query}'. Here's a real-world Python example tailored to that idea."
-    mission = f"Building a helper based on your question about {safe_query}"
-    recap = "Python lets you solve real problems with the right tools (lists, functions, loops, etc.)."
-    filename = "custom_example.py"
 
     if any(w in q for w in ["loop", "for ", "repeat", "each"]):
         code = f'''# Based on your question: {safe_query}
@@ -166,7 +168,7 @@ for item in items:
     print(f"  - Handling: {item}")
 print("Done! Loops let you repeat actions cleanly.")'''
         title = "for loops — Repeating based on your question"
-        recap = "for item in list: repeat code for every item. Perfect for processing collections."
+        base_recap = "for item in list: repeat code for every item. Perfect for processing collections."
 
     elif any(w in q for w in ["function", "def ", "reusable", "spell", "method"]):
         code = f'''# Based on your question: {safe_query}
@@ -179,7 +181,7 @@ print("Using a reusable function for your question...")
 result = solve_problem(["item1", "item2"])
 print(f"Result: {{result}}")'''
         title = "Functions (def) — Reusable code for your idea"
-        recap = "def name(params): create reusable logic. Call it whenever you need it."
+        base_recap = "def name(params): create reusable logic. Call it whenever you need it."
 
     elif any(w in q for w in ["class", "object", "oop", "pet", "character"]):
         code = f'''# Based on your question: {safe_query}
@@ -192,7 +194,7 @@ class Helper:
 h = Helper("MagicBot")
 h.help_with("your question")'''
         title = "Classes — Objects for your concept"
-        recap = "class Name: blueprint for objects with data and behavior."
+        base_recap = "class Name: blueprint for objects with data and behavior."
 
     elif any(w in q for w in ["file", "save", "write", "read", "log"]):
         code = f'''# Based on your question: {safe_query}
@@ -204,7 +206,7 @@ print("Saved your question to a file!")
 with open("query_log.txt") as f:
     print("File contents:", f.read())'''
         title = "File handling — Saving based on your query"
-        recap = "with open(...) as f: read/write files easily."
+        base_recap = "with open(...) as f: read/write files easily."
 
     elif any(w in q for w in ["input", "user", "ask", "prompt"]):
         code = f'''# Based on your question: {safe_query}
@@ -215,10 +217,10 @@ print(f"You answered: {{user_response}}")
 if user_response.lower() == "yes":
     print("Great! Python input() lets programs talk to users.")'''
         title = "User input — Interacting based on your question"
-        recap = "input() gets text from the user. Combine with if/else for decisions."
+        base_recap = "input() gets text from the user. Combine with if/else for decisions."
 
     else:
-        # Generic but still includes the query
+        # Truly generic but still query-specific
         code = f'''# Real World example based directly on your question: {safe_query}
 print(f"You asked about: {safe_query}")
 tasks = ["understand the idea", "write code", "test it"]
@@ -227,14 +229,13 @@ for t in tasks:
     print(f"  - {{t}}")
 print("\\nPython makes it easy to turn questions into working code!")'''
         title = f"Real-world helper for: {safe_query}"
-        recap = "Python lets you collect things, repeat actions, and give the computer clear instructions."
 
     return {
         "title": title,
-        "story": story,
-        "mission": mission,
+        "story": base_story,
+        "mission": base_mission,
         "code": code,
-        "recap": recap,
+        "recap": base_recap,
         "filename": filename
     }
 
