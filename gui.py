@@ -140,59 +140,103 @@ print(f"Best days were: {best}")''',
 }
 
 def get_lesson(query: str):
-    """Smart fallback + known lessons."""
+    """Smart fallback + known lessons. Now generates code based on the user's specific question."""
     q = query.lower().strip()
+    safe_query = query[:80] + "..." if len(query) > 80 else query
+
+    # Exact known lessons first
     for key in LESSONS:
         if key in q or LESSONS[key]["title"].lower().split()[0] in q:
             return LESSONS[key]
 
-    # Smart real-world fallback for unknown concepts
-    if any(w in q for w in ["loop", "for", "repeat"]):
-        return {
-            "title": "for loops — Repeating actions",
-            "story": "You are making a simple game. You need to repeat an action for every enemy on the screen.",
-            "mission": "Video Game Enemy Spawner",
-            "code": '''enemies = ["goblin", "skeleton", "bat", "dragon"]
-print("⚔️ Fighting all enemies in the level!")
-for enemy in enemies:
-    print(f"  Attacking the {enemy}!")
-print("\\nLevel cleared! Great job using loops.")''',
-            "recap": "for item in list: lets you repeat code for every item.\nReal life: processing game entities, sending emails to a list, calculating totals.",
-            "filename": "game_enemy_loop.py"
-        }
-    elif any(w in q for w in ["function", "def", "reusable"]):
-        return {
-            "title": "Functions (def) — Reusable spells",
-            "story": "You want to cast the same 'fireball' spell many times without rewriting the code.",
-            "mission": "Magic Spell Book in a Game",
-            "code": '''def cast_fireball(target):
-    """Reusable magic!"""
-    print(f"🔥 Fireball hits the {target} for 25 damage!")
+    # Dynamic code generation based on query keywords for "any" question
+    code = ""
+    title = f"Custom example for: {safe_query}"
+    story = f"You asked about '{safe_query}'. Here's a real-world Python example tailored to that idea."
+    mission = f"Building a helper based on your question about {safe_query}"
+    recap = "Python lets you solve real problems with the right tools (lists, functions, loops, etc.)."
+    filename = "custom_example.py"
 
-print("Wizard is fighting...")
-cast_fireball("goblin")
-cast_fireball("troll")
-print("All spells cast using one function!")''',
-            "recap": "def name(): lets you create reusable commands.\nReal life: game abilities, calculations you do often, cleaning up repeated code.",
-            "filename": "magic_spell_function.py"
-        }
+    if any(w in q for w in ["loop", "for ", "repeat", "each"]):
+        code = f'''# Based on your question: {safe_query}
+# Real Life: Processing a list of items (e.g. game enemies or tasks)
+items = ["goblin", "skeleton", "task1", "task2"]
+print(f"Processing items for your question about: {safe_query}")
+for item in items:
+    print(f"  - Handling: {item}")
+print("Done! Loops let you repeat actions cleanly.")'''
+        title = "for loops — Repeating based on your question"
+        recap = "for item in list: repeat code for every item. Perfect for processing collections."
+
+    elif any(w in q for w in ["function", "def ", "reusable", "spell", "method"]):
+        code = f'''# Based on your question: {safe_query}
+def solve_problem(data):
+    """Reusable function tailored to your query."""
+    print(f"Solving: {safe_query} with data: {{data}}")
+    return len(data) * 2  # example logic
+
+print("Using a reusable function for your question...")
+result = solve_problem(["item1", "item2"])
+print(f"Result: {{result}}")'''
+        title = "Functions (def) — Reusable code for your idea"
+        recap = "def name(params): create reusable logic. Call it whenever you need it."
+
+    elif any(w in q for w in ["class", "object", "oop", "pet", "character"]):
+        code = f'''# Based on your question: {safe_query}
+class Helper:
+    def __init__(self, name):
+        self.name = name
+    def help_with(self, task):
+        print(f"{{self.name}} is helping with: {{task}} (your query: {safe_query})")
+
+h = Helper("MagicBot")
+h.help_with("your question")'''
+        title = "Classes — Objects for your concept"
+        recap = "class Name: blueprint for objects with data and behavior."
+
+    elif any(w in q for w in ["file", "save", "write", "read", "log"]):
+        code = f'''# Based on your question: {safe_query}
+with open("query_log.txt", "w") as f:
+    f.write(f"User asked: {safe_query}\\n")
+    f.write("This was saved using Python file handling.\\n")
+
+print("Saved your question to a file!")
+with open("query_log.txt") as f:
+    print("File contents:", f.read())'''
+        title = "File handling — Saving based on your query"
+        recap = "with open(...) as f: read/write files easily."
+
+    elif any(w in q for w in ["input", "user", "ask", "prompt"]):
+        code = f'''# Based on your question: {safe_query}
+# (In real run, it would prompt. Here we simulate.)
+print(f"Simulating user input for: {safe_query}")
+user_response = "yes"  # pretend input
+print(f"You answered: {{user_response}}")
+if user_response.lower() == "yes":
+    print("Great! Python input() lets programs talk to users.")'''
+        title = "User input — Interacting based on your question"
+        recap = "input() gets text from the user. Combine with if/else for decisions."
+
     else:
-        # Truncate very long queries to prevent UI issues / "endless" display
-        safe_query = query[:80] + "..." if len(query) > 80 else query
-        return {
-            "title": f"Real-world helper for: {safe_query}",
-            "story": "You are teaching a little robot how to help around the house by collecting and organizing tasks.",
-            "mission": "Personal Robot Helper",
-            "code": f'''# Real World: Personal Robot Helper
-tasks = []
-tasks.append("feed the cat")
-tasks.append("water the plants")
-print("Robot's task list:", tasks)
-print("First job:", tasks[0])
-print("\\nGreat! You used Python to give your robot a job list.")''',
-            "recap": "Python lets you collect things, repeat actions, and give the computer clear instructions.\nReal life: automation, games, data processing, personal tools.",
-            "filename": "robot_helper.py"
-        }
+        # Generic but still includes the query
+        code = f'''# Real World example based directly on your question: {safe_query}
+print(f"You asked about: {safe_query}")
+tasks = ["understand the idea", "write code", "test it"]
+print("Robot helper for your question:")
+for t in tasks:
+    print(f"  - {{t}}")
+print("\\nPython makes it easy to turn questions into working code!")'''
+        title = f"Real-world helper for: {safe_query}"
+        recap = "Python lets you collect things, repeat actions, and give the computer clear instructions."
+
+    return {
+        "title": title,
+        "story": story,
+        "mission": mission,
+        "code": code,
+        "recap": recap,
+        "filename": filename
+    }
 
 # =============================================================================
 # GUI APPLICATION
@@ -489,6 +533,7 @@ class MagicTutorApp(ctk.CTk):
             if index < len(self.current_code):
                 self.code_box.insert("end", self.current_code[index])
                 self.code_box.see("end")
+                self.update_idletasks()
                 self.after(TYPING_DELAY_MS, type_char, index + 1)
             else:
                 self.animate_btn.configure(state="normal", text="▶ WATCH LIVE TYPING")
@@ -502,27 +547,32 @@ class MagicTutorApp(ctk.CTk):
 
         self.output_box.delete("0.0", "end")
         self.output_box.insert("0.0", "Running in real life...\n")
+        self.update_idletasks()
 
-        # Write to temp file and execute
+        # Write to temp file and execute (use sys.executable for reliability)
         try:
             with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False, encoding="utf-8") as tmp:
                 tmp.write(self.current_code)
                 tmp_path = tmp.name
 
             result = subprocess.run(
-                ["python", tmp_path],
+                [sys.executable, tmp_path],
                 capture_output=True, text=True, timeout=10
             )
-            output = result.stdout
+            output = result.stdout or ""
             if result.stderr:
                 output += "\n[ERROR]\n" + result.stderr
 
             self.output_box.delete("0.0", "end")
-            self.output_box.insert("0.0", output or "(no output)")
+            self.output_box.insert("0.0", output or "(no printed output)")
+            self.output_box.see("0.0")
+            self.update_idletasks()
 
             os.unlink(tmp_path)
         except Exception as e:
-            self.output_box.insert("end", f"\nFailed to run: {e}")
+            self.output_box.delete("0.0", "end")
+            self.output_box.insert("0.0", f"Failed to run code:\n{str(e)}")
+            self.update_idletasks()
 
     def save_example(self):
         if not self.current_lesson or not self.current_code:
