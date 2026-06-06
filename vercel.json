@@ -4,6 +4,7 @@
   "buildCommand": "echo 'Magic Tutor - Static PWA deployment (mobile.html)'",
   "outputDirectory": ".",
   "routes": [
+    { "src": "/api/(.*)", "dest": "/api/$1" },
     { "src": "/", "dest": "/mobile.html" },
     { "src": "/(.*)", "dest": "/mobile.html" }
   ],
