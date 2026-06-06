@@ -423,6 +423,11 @@ print("Total:", sum(int(p.split(":")[1]) for p in parts))`,
                 if (toggle) toggle.checked = aiEnabled;
 
                 if (aiEnabled) {
+                    // Clear any previous "not available" red message when we confirm it's good
+                    if (statusEl.innerHTML.includes('AI is not available') || statusEl.innerHTML.includes('GROQ_API_KEY')) {
+                        statusEl.innerHTML = '';
+                        statusEl.style.color = '';
+                    }
                     statusEl.innerHTML = '🟢 AI brain online (Groq)';
                     statusEl.style.color = '#00ff9f';
                 } else {
@@ -432,7 +437,7 @@ print("Total:", sum(int(p.split(":")[1]) for p in parts))`,
                 }
             } catch (e) {
                 aiEnabled = false;
-                statusEl.innerHTML = '🔴 Could not reach backend';
+                statusEl.innerHTML = '🔴 Could not reach backend (check deployment + env vars)';
                 statusEl.style.color = '#ff6666';
             }
         }
@@ -637,10 +642,16 @@ print("Total:", sum(int(p.split(":")[1]) for p in parts))`,
             if (toggle) {
                 toggle.addEventListener('change', () => {
                     const statusEl = document.getElementById('ai-status');
-                    if (toggle.checked && !aiEnabled) {
-                        statusEl.innerHTML = '🔴 AI is not available — please set GROQ_API_KEY in Vercel';
-                        statusEl.style.color = '#ff6666';
-                        setTimeout(() => { toggle.checked = false; }, 1200);
+                    if (toggle.checked) {
+                        // Always re-check the live backend status when the user turns AI on.
+                        // This way, after adding the env var + redeploy, toggling will see the fresh ai_enabled value.
+                        checkAIStatus();
+                    } else {
+                        // Turning off: just clear any AI-related status message
+                        if (statusEl.innerHTML.includes('AI') || statusEl.innerHTML.includes('GROQ')) {
+                            statusEl.innerHTML = '';
+                            statusEl.style.color = '';
+                        }
                     }
                 });
             }
