@@ -321,6 +321,18 @@ print("Total:", sum(int(p.split(":")[1]) for p in parts))`,
         let currentLesson = null;
         let currentCode = "";
         let currentOutput = "";
+        let isAsking = false;
+        let currentAskAbortController = null;
+
+        function resetLessonUI() {
+            document.getElementById('lesson-title').textContent = '';
+            document.getElementById('lesson-story').textContent = '';
+            document.getElementById('lesson-mission').textContent = '';
+            document.getElementById('lesson-code').textContent = '';
+            document.getElementById('lesson-recap').textContent = '';
+            document.getElementById('lesson-output').style.display = 'none';
+            document.getElementById('lesson-output').textContent = '';
+        }
 
         function showHome() {
             document.getElementById('home-screen').classList.remove('hidden');
@@ -430,28 +442,52 @@ print("Total:", sum(int(p.split(":")[1]) for p in parts))`,
             const query = inputEl.value.trim();
             if (!query || query.length < 2) return;
 
+            if (isAsking) return; // prevent concurrent calls that cause mixed/stale results
+
+            // Abort any previous in-flight ask (prevents race conditions on rapid clicks)
+            if (currentAskAbortController) {
+                currentAskAbortController.abort();
+            }
+            currentAskAbortController = new AbortController();
+
+            isAsking = true;
+
             const useAI = document.getElementById('use-ai-toggle')?.checked && aiEnabled;
             const originalPlaceholder = inputEl.placeholder;
+            const statusEl = document.getElementById('ai-status');
+
+            // Always clear previous results and status for a fresh ask
+            resetLessonUI();
+            statusEl.innerHTML = '';
+            statusEl.style.color = '';
 
             inputEl.placeholder = useAI ? "Waking the Groq Llama..." : "Thinking with local Python magic...";
             inputEl.disabled = true;
 
+            const cacheBuster = '&cb=' + Date.now(); // prevent any caching of previous queries
+
             try {
                 if (useAI) {
                     // === SMART AI PATH (with streaming support) ===
-                    await askWithAIStreaming(query);
+                    await askWithAIStreaming(query, currentAskAbortController.signal, cacheBuster);
                 } else {
                     // === FAST LOCAL PATH ===
-                    const res = await fetch('/api/explain?q=' + encodeURIComponent(query));
+                    const res = await fetch('/api/explain?q=' + encodeURIComponent(query) + cacheBuster, {
+                        signal: currentAskAbortController.signal,
+                        cache: 'no-store'
+                    });
                     if (!res.ok) throw new Error('Fast API error');
                     const data = await res.json();
                     inputEl.value = '';
                     renderDynamicLesson(data);
                 }
             } catch (err) {
+                if (err.name === 'AbortError') {
+                    // user started a new ask, ignore
+                    return;
+                }
                 console.warn('Ask failed:', err);
 
-                const statusEl = document.getElementById('ai-status');
                 const isUnavailable = err.message === 'ai_unavailable' || (err.message && err.message.includes('unavailable'));
 
                 if (useAI) {
@@ -465,29 +501,41 @@ print("Total:", sum(int(p.split(":")[1]) for p in parts))`,
 
                     // Always try fast fallback on AI problems
                     try {
-                        const res = await fetch('/api/explain?q=' + encodeURIComponent(query));
+                        const res = await fetch('/api/explain?q=' + encodeURIComponent(query) + cacheBuster, {
+                            cache: 'no-store'
+                        });
+                        if (!res.ok) throw new Error();
                         const data = await res.json();
                         inputEl.value = '';
                         renderDynamicLesson(data);
                     } catch (e2) {
-                        statusEl.innerHTML = '🔴 Even fast mode had issues. Try the lesson buttons.';
+                        statusEl.innerHTML = '🔴 Could not reach backend. Try the lesson buttons above.';
                         statusEl.style.color = '#ff6666';
                     }
                 } else {
-                    statusEl.innerHTML = '🔴 Something went wrong with the fast tutor. Try the lesson buttons.';
+                    statusEl.innerHTML = '🔴 Could not reach backend. Try the lesson buttons above.';
                     statusEl.style.color = '#ff6666';
                 }
             } finally {
                 inputEl.placeholder = originalPlaceholder;
                 inputEl.disabled = false;
+                isAsking = false;
+                currentAskAbortController = null;
             }
         }
 
-        async function askWithAIStreaming(query) {
+        async function askWithAIStreaming(query, signal, cacheBuster) {
             const inputEl = document.getElementById('ask-input');
-            const res = await fetch('/api/ask?q=' + encodeURIComponent(query) + '&stream=true');
+            const res = await fetch('/api/ask?q=' + encodeURIComponent(query) + '&stream=true' + (cacheBuster || ''), {
+                signal: signal,
+                cache: 'no-store'
+            });
 
-            if (!res.ok || !res.body) throw new Error('Stream failed');
+            // Early detection: if we got HTML instead of a stream (bad routes / not deployed), fail fast
+            const contentType = res.headers.get('content-type') || '';
+            if (!res.ok || !res.body || contentType.includes('text/html')) {
+                throw new Error('Stream failed - likely could not reach backend (routes or deployment issue)');
+            }
 
             const reader = res.body.getReader();
             const decoder = new TextDecoder();
