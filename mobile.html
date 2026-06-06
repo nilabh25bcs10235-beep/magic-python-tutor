@@ -202,7 +202,7 @@
             </div>
 
             <div class="section">
-                <div class="section-title">Ask Anything <span style="font-size:10px;opacity:0.7">(uses real Python on Vercel)</span></div>
+                <div class="section-title">Ask Anything <span style="font-size:10px;opacity:0.7">(powered by Groq + Llama)</span></div>
                 <div class="input-area">
                     <input id="ask-input" type="text" placeholder="e.g. how do loops work in games or what is a class" onkeypress="if(event.key === 'Enter') askAnything()">
                     <button onclick="askAnything()" style="background:#ff00cc;color:white;border:none;padding:12px 18px;border-radius:8px;font-weight:bold;">ASK</button>
@@ -389,19 +389,19 @@ print("Total:", sum(int(p.split(":")[1]) for p in parts))`,
             if (!query || query.length < 2) return;
 
             const originalPlaceholder = inputEl.placeholder;
-            inputEl.placeholder = "Thinking with real Python logic...";
+            inputEl.placeholder = "Asking the Groq Llama brain...";
             inputEl.disabled = true;
 
             try {
-                const res = await fetch('/api/explain?q=' + encodeURIComponent(query));
-                if (!res.ok) throw new Error('API error');
+                // Use the smart AI endpoint (Groq + Llama)
+                const res = await fetch('/api/ask?q=' + encodeURIComponent(query));
+                if (!res.ok) throw new Error('AI API error');
                 const data = await res.json();
                 inputEl.value = '';
                 renderDynamicLesson(data);
             } catch (err) {
-                // Fallback to the old simple behavior if API fails (e.g. local file://)
-                console.warn('API call failed, using local fallback', err);
-                alert("The live Python brain is only available when deployed on Vercel.\n\nTry one of the lesson buttons above, or deploy the latest version!");
+                console.warn('AI ask failed:', err);
+                alert("The AI tutor (Groq) couldn't be reached right now.\n\nMake sure you're on the deployed Vercel URL and the GROQ_API_KEY is set in Vercel environment variables.");
             } finally {
                 inputEl.placeholder = originalPlaceholder;
                 inputEl.disabled = false;

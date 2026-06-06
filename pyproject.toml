@@ -14,7 +14,8 @@ authors = [
 ]
 dependencies = [
   "rich>=13.0",
-  "customtkinter>=5.2.0"
+  "customtkinter>=5.2.0",
+  "openai>=1.0.0"   # Used by the Groq-powered /api/ask endpoint (Groq is OpenAI compatible)
 ]
 keywords = ["python", "education", "tutor", "teaching", "cli", "rich", "beginner", "kids"]
 classifiers = [
