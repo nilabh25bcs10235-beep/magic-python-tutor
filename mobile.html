@@ -207,7 +207,17 @@
                     <input id="ask-input" type="text" placeholder="e.g. how do loops work in games or what is a class" onkeypress="if(event.key === 'Enter') askAnything()">
                     <button onclick="askAnything()" style="background:#ff00cc;color:white;border:none;padding:12px 18px;border-radius:8px;font-weight:bold;">ASK</button>
                 </div>
-                <div class="status">Live answers from Python • Works great offline after install</div>
+
+                <!-- Hybrid Mode Toggle -->
+                <div style="margin: 8px 0 4px; display: flex; align-items: center; gap: 8px; font-size: 13px;">
+                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                        <input type="checkbox" id="use-ai-toggle" checked style="accent-color: #00f0ff; width: 16px; height: 16px;">
+                        <span style="color: #00f0ff; font-weight: 600;">Use AI (Groq + Llama)</span>
+                    </label>
+                    <span style="opacity: 0.6; font-size: 11px;">(hybrid: fast local + smart AI)</span>
+                </div>
+
+                <div id="ai-status" class="status" style="font-size: 11px; opacity: 0.75;"></div>
             </div>
         </div>
 
@@ -334,8 +344,7 @@ print("Total:", sum(int(p.split(":")[1]) for p in parts))`,
         }
 
         function renderDynamicLesson(data) {
-            // data comes from /api/explain
-            currentLesson = null; // mark as dynamic
+            currentLesson = null;
             currentCode = data.code || "";
             currentOutput = data.sample_output || data.output || "";
 
@@ -343,10 +352,14 @@ print("Total:", sum(int(p.split(":")[1]) for p in parts))`,
             document.getElementById('lesson-screen').classList.remove('hidden');
 
             const titleEl = document.getElementById('lesson-title');
-            titleEl.textContent = data.title || "Python Concept";
-            if (data.is_fallback) {
-                titleEl.textContent += "  ✨ (generated live)";
+            let titleText = data.title || "Python Concept";
+
+            if (data.is_ai || data.source === "groq") {
+                titleText += "  🧠 (powered by Groq)";
+            } else if (data.is_fallback) {
+                titleText += "  ✨ (generated live)";
             }
+            titleEl.textContent = titleText;
 
             document.getElementById('lesson-story').textContent = data.story || "";
             document.getElementById('lesson-mission').textContent = data.mission || "";
@@ -383,28 +396,158 @@ print("Total:", sum(int(p.split(":")[1]) for p in parts))`,
             }
         }
 
+        // ==================== HYBRID AI + FAST MODE ====================
+
+        let aiEnabled = false; // will be set on load
+
+        async function checkAIStatus() {
+            const statusEl = document.getElementById('ai-status');
+            try {
+                const res = await fetch('/api'); // our info endpoint
+                const data = await res.json();
+                aiEnabled = !!data.ai_enabled;
+
+                const toggle = document.getElementById('use-ai-toggle');
+                if (toggle) toggle.checked = aiEnabled;
+
+                if (aiEnabled) {
+                    statusEl.innerHTML = '🟢 AI brain online (Groq)';
+                    statusEl.style.color = '#00ff9f';
+                } else {
+                    statusEl.innerHTML = '🟡 AI sleeping — set <b>GROQ_API_KEY</b> in Vercel settings to wake it up';
+                    statusEl.style.color = '#ffcc00';
+                    if (toggle) toggle.checked = false;
+                }
+            } catch (e) {
+                aiEnabled = false;
+                statusEl.innerHTML = '🔴 Could not reach backend';
+                statusEl.style.color = '#ff6666';
+            }
+        }
+
         async function askAnything() {
             const inputEl = document.getElementById('ask-input');
             const query = inputEl.value.trim();
             if (!query || query.length < 2) return;
 
+            const useAI = document.getElementById('use-ai-toggle')?.checked && aiEnabled;
             const originalPlaceholder = inputEl.placeholder;
-            inputEl.placeholder = "Asking the Groq Llama brain...";
+
+            inputEl.placeholder = useAI ? "Waking the Groq Llama..." : "Thinking with local Python magic...";
             inputEl.disabled = true;
 
             try {
-                // Use the smart AI endpoint (Groq + Llama)
-                const res = await fetch('/api/ask?q=' + encodeURIComponent(query));
-                if (!res.ok) throw new Error('AI API error');
-                const data = await res.json();
-                inputEl.value = '';
-                renderDynamicLesson(data);
+                if (useAI) {
+                    // === SMART AI PATH (with streaming support) ===
+                    await askWithAIStreaming(query);
+                } else {
+                    // === FAST LOCAL PATH ===
+                    const res = await fetch('/api/explain?q=' + encodeURIComponent(query));
+                    if (!res.ok) throw new Error('Fast API error');
+                    const data = await res.json();
+                    inputEl.value = '';
+                    renderDynamicLesson(data);
+                }
             } catch (err) {
-                console.warn('AI ask failed:', err);
-                alert("The AI tutor (Groq) couldn't be reached right now.\n\nMake sure you're on the deployed Vercel URL and the GROQ_API_KEY is set in Vercel environment variables.");
+                console.warn('Ask failed:', err);
+
+                // Graceful fallback
+                const statusEl = document.getElementById('ai-status');
+                if (useAI) {
+                    statusEl.innerHTML = '🟡 AI had trouble — falling back to fast local mode';
+                    statusEl.style.color = '#ffcc00';
+
+                    // Auto fall back to fast
+                    try {
+                        const res = await fetch('/api/explain?q=' + encodeURIComponent(query));
+                        const data = await res.json();
+                        inputEl.value = '';
+                        renderDynamicLesson(data);
+                    } catch (e2) {
+                        alert("Even the fast mode had an issue. Try the lesson buttons or reload.");
+                    }
+                } else {
+                    alert("Something went wrong with the fast tutor. Try one of the lesson buttons above.");
+                }
             } finally {
                 inputEl.placeholder = originalPlaceholder;
                 inputEl.disabled = false;
+            }
+        }
+
+        async function askWithAIStreaming(query) {
+            const inputEl = document.getElementById('ask-input');
+            const res = await fetch('/api/ask?q=' + encodeURIComponent(query) + '&stream=true');
+
+            if (!res.ok || !res.body) throw new Error('Stream failed');
+
+            const reader = res.body.getReader();
+            const decoder = new TextDecoder();
+            let fullText = "";
+            let finalData = null;
+
+            // Show the lesson screen immediately with a generating state
+            document.getElementById('home-screen').classList.add('hidden');
+            document.getElementById('lesson-screen').classList.remove('hidden');
+            document.getElementById('lesson-title').textContent = "🧠 Magic Tutor is thinking...";
+            document.getElementById('lesson-story').textContent = "Summoning the Groq Llama...";
+            document.getElementById('lesson-code').textContent = "";
+            document.getElementById('lesson-mission').textContent = "";
+            document.getElementById('lesson-recap').textContent = "";
+            document.getElementById('lesson-output').style.display = 'none';
+
+            let buffer = "";
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                const chunk = decoder.decode(value, { stream: true });
+                buffer += chunk;
+
+                // Parse SSE data: lines starting with "data: "
+                const lines = buffer.split('\n');
+                buffer = lines.pop() || ""; // keep last partial line
+
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        const payload = line.slice(6).trim();
+                        if (payload === '[DONE]') {
+                            // Try to parse whatever we have as final JSON
+                            try {
+                                finalData = JSON.parse(fullText);
+                            } catch (e) {
+                                // If still not valid JSON, use what we have
+                                finalData = { title: "Almost there...", story: fullText };
+                            }
+                            continue;
+                        }
+
+                        fullText += payload;
+
+                        // Live update the UI with whatever we have so far (best effort)
+                        try {
+                            const partial = JSON.parse(fullText);
+                            if (partial.title) document.getElementById('lesson-title').textContent = partial.title + "  ✨ (streaming)";
+                            if (partial.story) document.getElementById('lesson-story').textContent = partial.story;
+                            if (partial.mission) document.getElementById('lesson-mission').textContent = partial.mission;
+                            if (partial.code) document.getElementById('lesson-code').textContent = partial.code;
+                            if (partial.recap) document.getElementById('lesson-recap').textContent = partial.recap;
+                        } catch (e) {
+                            // Not yet valid JSON — show raw accumulating text in story for live feel
+                            document.getElementById('lesson-story').textContent = fullText.slice(0, 600) + (fullText.length > 600 ? "..." : "");
+                        }
+                    }
+                }
+            }
+
+            inputEl.value = '';
+
+            if (finalData) {
+                renderDynamicLesson(finalData);
+            } else if (fullText) {
+                // Last resort
+                renderDynamicLesson({ title: "AI Response", story: fullText, code: "", recap: "" });
             }
         }
 
@@ -423,7 +566,25 @@ print("Total:", sum(int(p.split(":")[1]) for p in parts))`,
             }
         });
 
-        console.log('%c[MAGIC TUTOR] Mobile PWA ready. Add to home screen for best experience!', 'color:#00f0ff');
+        // Initialize AI status on load (hybrid mode awareness)
+        window.addEventListener('load', () => {
+            checkAIStatus();
+
+            // Optional: make the toggle react immediately
+            const toggle = document.getElementById('use-ai-toggle');
+            if (toggle) {
+                toggle.addEventListener('change', () => {
+                    const statusEl = document.getElementById('ai-status');
+                    if (toggle.checked && !aiEnabled) {
+                        statusEl.innerHTML = '🔴 AI is not available — please set GROQ_API_KEY in Vercel';
+                        statusEl.style.color = '#ff6666';
+                        setTimeout(() => { toggle.checked = false; }, 1200);
+                    }
+                });
+            }
+        });
+
+        console.log('%c[MAGIC TUTOR] Mobile PWA ready (Hybrid AI + Fast mode). Add to home screen for best experience!', 'color:#00f0ff');
     </script>
 </body>
 </html>

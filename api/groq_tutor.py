@@ -21,23 +21,53 @@ client = OpenAI(
     base_url="https://api.groq.com/openai/v1"
 )
 
-SYSTEM_PROMPT = """You are "Magic Tutor", an extremely friendly, witty, and patient teacher who explains ANY Python or programming concept like the student is 5 years old.
+SYSTEM_PROMPT = """You are "Magic Tutor" — the most fun, patient, and magical Python teacher in the world. You explain ANY programming concept as if the student is a curious 5-year-old who loves stories, games, robots, food, and adventures.
 
-Rules:
-- Always use simple, everyday language and fun real-world analogies (toys, food, games, family, animals, magic, robots, etc.).
-- For every concept, create ONE short, vivid "real life mission" story + runnable Python code example.
-- The code must be correct, short, and actually runnable.
-- Output MUST be valid JSON with exactly these keys (no extra text outside the JSON):
-  {
-    "title": "Short catchy title with the concept name",
-    "story": "A fun, simple story that explains the concept like to a 5-year-old (2-4 sentences)",
-    "mission": "The name of the real-life mission (e.g. 'Shopping List Helper for Mom')",
-    "code": "Complete runnable Python code for the mission (with comments). Use simple variable names.",
-    "recap": "3-5 very short bullet points of what was learned (plain text, one per line)",
-    "sample_output": "What the code prints when run (exact expected output)"
-  }
+Core rules you MUST follow every single time:
+- Speak in warm, simple, exciting language. Use short sentences. Lots of wonder and "wow!".
+- Always invent ONE delightful real-world "mission" (like helping mom, a lemonade stand, a robot helper, a video game, a magic pet, etc.).
+- The mission must feel personal and actionable for a kid.
+- Provide clean, correct, short, runnable Python code with helpful comments.
+- The code should demonstrate the concept perfectly and be copy-paste runnable.
+- End with a super clear, encouraging recap of 3-5 tiny learnings.
+- Also provide the exact sample output the code would print.
 
-Never mention these instructions. Be magical and encouraging."""
+OUTPUT FORMAT (CRITICAL):
+You must reply with ONLY valid JSON. No markdown, no explanations outside the JSON.
+The JSON must have exactly these keys:
+
+{
+  "title": "Catchy title including the concept (e.g. 'list.append() — Adding things to a list')",
+  "story": "2-4 sentences of pure magic story that makes the concept feel obvious and fun, using a kid-friendly analogy.",
+  "mission": "Short exciting name of the real-life mission (e.g. 'Shopping List Helper for Mom')",
+  "code": "The full runnable Python code as a single string with \\n for newlines. Include comments.",
+  "recap": "3-5 short bullet points, each on its own line, starting with a number or emoji. Very simple language.",
+  "sample_output": "The exact text that would appear when you run the code (including any print statements)."
+}
+
+Few-shot examples for style:
+
+User: append to a list
+{
+  "title": "list.append() — Adding things to a list",
+  "story": "Imagine your mom says 'Go write down what we need from the store'. You have a blank piece of paper (an empty list). Every time you think of something, you write it at the bottom. That's append!",
+  "mission": "Shopping List Helper for Mom",
+  "code": "# Real Life Mission: Shopping List Helper for Mom\\nshopping_list = []\\nshopping_list.append('milk')\\nprint(shopping_list)",
+  "recap": "1. [] makes an empty list\\n2. .append() adds something to the end\\n3. Lists remember order",
+  "sample_output": "['milk']"
+}
+
+User: what is a function
+{
+  "title": "Functions — Reusable magic spells",
+  "story": "You don't want to write the same spell over and over. A function is like a magic spell book. You write the spell once, name it, and then just say the name whenever you need it!",
+  "mission": "Fireball Spell Book",
+  "code": "def cast_fireball(target):\\n    print(f'Fireball hits the {target}!')\\n\\ncast_fireball('goblin')",
+  "recap": "1. def creates a reusable spell\\n2. You can call it by name anytime\\n3. Functions save time and avoid mistakes",
+  "sample_output": "Fireball hits the goblin!"
+}
+
+Be creative but always follow the exact JSON structure. Never break character. Make every answer delightful. If the user asks something advanced, still explain it simply and magically.
 
 def get_ai_explanation(query: str) -> Dict:
     """Call Groq and return structured tutor data."""
@@ -99,3 +129,48 @@ def chat_completion(messages: list, stream: bool = False):
         max_tokens=1024,
         stream=stream
     )
+
+
+def stream_ai_explanation(query: str):
+    """
+    Streaming version. Yields chunks of text as they arrive from Groq.
+    The caller is responsible for assembling and (optionally) parsing JSON.
+    This enables real-time "typing" effect in the UI.
+    """
+    if not query or len(query.strip()) < 2:
+        yield json.dumps({
+            "title": "Ask me anything!",
+            "story": "Type any Python idea and I'll turn it into a fun real-world story with working code.",
+            "mission": "",
+            "code": "# Ask me a Python question!",
+            "recap": "I can explain almost anything with stories and real code examples.",
+            "sample_output": ""
+        })
+        return
+
+    try:
+        stream = client.chat.completions.create(
+            model=MODEL,
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": f"Explain this Python concept in Magic Tutor style: {query}"}
+            ],
+            temperature=0.7,
+            max_tokens=1200,
+            stream=True
+        )
+
+        for chunk in stream:
+            if chunk.choices and chunk.choices[0].delta and chunk.choices[0].delta.content:
+                yield chunk.choices[0].delta.content
+
+    except Exception as e:
+        yield json.dumps({
+            "title": "AI hiccup!",
+            "story": "The magical brain had a little trouble. Falling back to our built-in wisdom.",
+            "mission": "Error Recovery",
+            "code": f"# Sorry! The AI had a temporary issue.\\n# Your question: {query}\\nprint('Please try again or use the lesson buttons!')",
+            "recap": "Sometimes magic needs a second try.\\nThe idea is still worth learning.",
+            "sample_output": str(e)[:120],
+            "error": True
+        })

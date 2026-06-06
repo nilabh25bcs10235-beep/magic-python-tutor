@@ -1,4 +1,5 @@
 import json
+import os
 
 # Vercel Python entrypoint (health/info only)
 # This file exists to satisfy "No python entrypoint found".
@@ -26,9 +27,11 @@ def handler(event, context):
             "endpoints": {
                 "pwa": "/",
                 "fast_heuristic": "/api/explain?q=...",
-                "smart_ai_groq": "/api/ask?q=..."
+                "smart_ai_groq": "/api/ask?q=...",
+                "smart_ai_groq_stream": "/api/ask?q=...&stream=true"
             },
             "desktop_install": "pip install git+https://github.com/nilabh25bcs10235-beep/magic-python-tutor.git && magic-tutor",
-            "note": "Set GROQ_API_KEY in Vercel env vars to enable the AI brain."
+            "ai_enabled": bool(os.environ.get("GROQ_API_KEY")),
+            "note": "Set GROQ_API_KEY in Vercel → Environment Variables to enable the smart AI brain."
         }, indent=2)
     }
