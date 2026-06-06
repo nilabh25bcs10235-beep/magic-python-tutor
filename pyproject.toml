@@ -44,3 +44,6 @@ Issues = "https://github.com/nilabh25bcs10235-beep/magic-python-tutor/issues"
 
 [tool.setuptools]
 py-modules = ["magic_tutor", "magic_typer", "gui"]
+
+[tool.vercel]
+entrypoint = "api/index.py"
