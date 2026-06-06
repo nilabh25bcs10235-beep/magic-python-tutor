@@ -13,13 +13,12 @@ from typing import Dict
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
 MODEL = os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile")
 
-if not GROQ_API_KEY:
-    raise RuntimeError("GROQ_API_KEY environment variable is not set")
-
-client = OpenAI(
-    api_key=GROQ_API_KEY,
-    base_url="https://api.groq.com/openai/v1"
-)
+client = None
+if GROQ_API_KEY:
+    client = OpenAI(
+        api_key=GROQ_API_KEY,
+        base_url="https://api.groq.com/openai/v1"
+    )
 
 SYSTEM_PROMPT = """You are "Magic Tutor" — the most fun, patient, and magical Python teacher in the world. You explain ANY programming concept as if the student is a curious 5-year-old who loves stories, games, robots, food, and adventures.
 
@@ -81,6 +80,19 @@ def get_ai_explanation(query: str) -> Dict:
             "sample_output": ""
         }
 
+    if not client:
+        return {
+            "title": "AI brain is sleeping",
+            "story": "The Groq AI isn't configured yet. Add the GROQ_API_KEY in your Vercel project settings to wake up the smart tutor.",
+            "mission": "Setup Mission",
+            "code": "# To enable AI answers:\\n# 1. Go to Vercel → Settings → Environment Variables\\n# 2. Add GROQ_API_KEY with your Groq key\\n# 3. Redeploy the project\\nprint('Then ask me anything again!')",
+            "recap": "1. Fast local mode still works perfectly\\n2. Set the key for creative AI explanations\\n3. Toggle 'Use AI' off to use instant answers",
+            "sample_output": "AI not configured",
+            "is_ai": False,
+            "ai_unavailable": True,
+            "error": "GROQ_API_KEY not set"
+        }
+
     try:
         response = client.chat.completions.create(
             model=MODEL,
@@ -90,13 +102,12 @@ def get_ai_explanation(query: str) -> Dict:
             ],
             temperature=0.7,
             max_tokens=1200,
-            response_format={"type": "json_object"},  # Ask for JSON
+            response_format={"type": "json_object"},
         )
 
         content = response.choices[0].message.content
         data = json.loads(content)
 
-        # Ensure all expected keys exist
         required = ["title", "story", "mission", "code", "recap", "sample_output"]
         for key in required:
             if key not in data:
@@ -107,13 +118,12 @@ def get_ai_explanation(query: str) -> Dict:
         return data
 
     except Exception as e:
-        # Graceful fallback
         return {
             "title": f"Let's explore: {query}",
-            "story": "Something went wrong with the AI brain, but the idea is still cool!",
+            "story": "The AI brain had a temporary hiccup. The fast local mode still works great!",
             "mission": "Error Recovery Mission",
-            "code": f"# Sorry, the AI had a hiccup.\n# Your question was: {query}\nprint('Try asking again!')",
-            "recap": "AI calls can sometimes fail. The concept is still worth learning!",
+            "code": f"# Sorry, the AI had a hiccup.\\n# Your question was: {query}\\nprint('Try asking again or use the lesson buttons!')",
+            "recap": "1. AI calls can fail sometimes\\n2. The fast local tutor is always available\\n3. The concept is still worth learning!",
             "sample_output": "Error: " + str(e)[:100],
             "is_ai": False,
             "error": str(e)
@@ -145,6 +155,20 @@ def stream_ai_explanation(query: str):
             "code": "# Ask me a Python question!",
             "recap": "I can explain almost anything with stories and real code examples.",
             "sample_output": ""
+        })
+        return
+
+    if not client:
+        yield json.dumps({
+            "title": "AI brain is sleeping",
+            "story": "The Groq AI isn't configured yet. Add the GROQ_API_KEY in your Vercel project settings to wake up the smart tutor.",
+            "mission": "Setup Mission",
+            "code": "# To enable AI answers:\\n# 1. Go to Vercel → Settings → Environment Variables\\n# 2. Add GROQ_API_KEY with your Groq key\\n# 3. Redeploy the project\\nprint('Then ask me anything again!')",
+            "recap": "1. Fast local mode still works perfectly\\n2. Set the key for creative AI explanations\\n3. Toggle 'Use AI' off to use instant answers",
+            "sample_output": "AI not configured",
+            "is_ai": False,
+            "ai_unavailable": True,
+            "error": "GROQ_API_KEY not set"
         })
         return
 

@@ -451,23 +451,31 @@ print("Total:", sum(int(p.split(":")[1]) for p in parts))`,
             } catch (err) {
                 console.warn('Ask failed:', err);
 
-                // Graceful fallback
                 const statusEl = document.getElementById('ai-status');
-                if (useAI) {
-                    statusEl.innerHTML = '🟡 AI had trouble — falling back to fast local mode';
-                    statusEl.style.color = '#ffcc00';
+                const isUnavailable = err.message === 'ai_unavailable' || (err.message && err.message.includes('unavailable'));
 
-                    // Auto fall back to fast
+                if (useAI) {
+                    if (isUnavailable) {
+                        statusEl.innerHTML = '🟡 AI is not configured — using fast local mode instead';
+                        statusEl.style.color = '#ffcc00';
+                    } else {
+                        statusEl.innerHTML = '🟡 AI had trouble — falling back to fast local mode';
+                        statusEl.style.color = '#ffcc00';
+                    }
+
+                    // Always try fast fallback on AI problems
                     try {
                         const res = await fetch('/api/explain?q=' + encodeURIComponent(query));
                         const data = await res.json();
                         inputEl.value = '';
                         renderDynamicLesson(data);
                     } catch (e2) {
-                        alert("Even the fast mode had an issue. Try the lesson buttons or reload.");
+                        statusEl.innerHTML = '🔴 Even fast mode had issues. Try the lesson buttons.';
+                        statusEl.style.color = '#ff6666';
                     }
                 } else {
-                    alert("Something went wrong with the fast tutor. Try one of the lesson buttons above.");
+                    statusEl.innerHTML = '🔴 Something went wrong with the fast tutor. Try the lesson buttons.';
+                    statusEl.style.color = '#ff6666';
                 }
             } finally {
                 inputEl.placeholder = originalPlaceholder;
@@ -513,11 +521,9 @@ print("Total:", sum(int(p.split(":")[1]) for p in parts))`,
                     if (line.startsWith('data: ')) {
                         const payload = line.slice(6).trim();
                         if (payload === '[DONE]') {
-                            // Try to parse whatever we have as final JSON
                             try {
                                 finalData = JSON.parse(fullText);
                             } catch (e) {
-                                // If still not valid JSON, use what we have
                                 finalData = { title: "Almost there...", story: fullText };
                             }
                             continue;
@@ -525,7 +531,7 @@ print("Total:", sum(int(p.split(":")[1]) for p in parts))`,
 
                         fullText += payload;
 
-                        // Live update the UI with whatever we have so far (best effort)
+                        // Live update (best effort)
                         try {
                             const partial = JSON.parse(fullText);
                             if (partial.title) document.getElementById('lesson-title').textContent = partial.title + "  ✨ (streaming)";
@@ -533,8 +539,13 @@ print("Total:", sum(int(p.split(":")[1]) for p in parts))`,
                             if (partial.mission) document.getElementById('lesson-mission').textContent = partial.mission;
                             if (partial.code) document.getElementById('lesson-code').textContent = partial.code;
                             if (partial.recap) document.getElementById('lesson-recap').textContent = partial.recap;
+
+                            // If the stream itself tells us AI is unavailable, stop and throw to trigger graceful fallback
+                            if (partial.ai_unavailable) {
+                                throw new Error('ai_unavailable');
+                            }
                         } catch (e) {
-                            // Not yet valid JSON — show raw accumulating text in story for live feel
+                            if (e.message === 'ai_unavailable') throw e;
                             document.getElementById('lesson-story').textContent = fullText.slice(0, 600) + (fullText.length > 600 ? "..." : "");
                         }
                     }
@@ -544,9 +555,12 @@ print("Total:", sum(int(p.split(":")[1]) for p in parts))`,
             inputEl.value = '';
 
             if (finalData) {
+                if (finalData.ai_unavailable) {
+                    // Let the outer catch handle graceful fallback + status message
+                    throw new Error('ai_unavailable');
+                }
                 renderDynamicLesson(finalData);
             } else if (fullText) {
-                // Last resort
                 renderDynamicLesson({ title: "AI Response", story: fullText, code: "", recap: "" });
             }
         }
