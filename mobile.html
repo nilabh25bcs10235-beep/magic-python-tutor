@@ -415,7 +415,8 @@ print("Total:", sum(int(p.split(":")[1]) for p in parts))`,
         async function checkAIStatus() {
             const statusEl = document.getElementById('ai-status');
             try {
-                const res = await fetch('/api'); // our info endpoint
+                // Use cache-busting so we always hit the current deployment
+                const res = await fetch('/api?cb=' + Date.now(), { cache: 'no-store' });
                 const data = await res.json();
                 aiEnabled = !!data.ai_enabled;
 
