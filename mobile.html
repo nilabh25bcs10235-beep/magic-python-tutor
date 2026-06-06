@@ -202,12 +202,12 @@
             </div>
 
             <div class="section">
-                <div class="section-title">Ask Anything</div>
+                <div class="section-title">Ask Anything <span style="font-size:10px;opacity:0.7">(uses real Python on Vercel)</span></div>
                 <div class="input-area">
-                    <input id="ask-input" type="text" placeholder="e.g. how do loops work in games" onkeypress="if(event.key === 'Enter') askAnything()">
+                    <input id="ask-input" type="text" placeholder="e.g. how do loops work in games or what is a class" onkeypress="if(event.key === 'Enter') askAnything()">
                     <button onclick="askAnything()" style="background:#ff00cc;color:white;border:none;padding:12px 18px;border-radius:8px;font-weight:bold;">ASK</button>
                 </div>
-                <div class="status">Works offline after first visit • Tap the menu to install as an app</div>
+                <div class="status">Live answers from Python • Works great offline after install</div>
             </div>
         </div>
 
@@ -310,6 +310,7 @@ print("Total:", sum(int(p.split(":")[1]) for p in parts))`,
 
         let currentLesson = null;
         let currentCode = "";
+        let currentOutput = "";
 
         function showHome() {
             document.getElementById('home-screen').classList.remove('hidden');
@@ -319,6 +320,7 @@ print("Total:", sum(int(p.split(":")[1]) for p in parts))`,
         function loadLesson(key) {
             currentLesson = LESSONS[key];
             currentCode = currentLesson.code;
+            currentOutput = currentLesson.output || "";
 
             document.getElementById('home-screen').classList.add('hidden');
             document.getElementById('lesson-screen').classList.remove('hidden');
@@ -328,6 +330,28 @@ print("Total:", sum(int(p.split(":")[1]) for p in parts))`,
             document.getElementById('lesson-mission').textContent = currentLesson.mission;
             document.getElementById('lesson-code').textContent = currentLesson.code;
             document.getElementById('lesson-recap').textContent = currentLesson.recap;
+            document.getElementById('lesson-output').style.display = 'none';
+        }
+
+        function renderDynamicLesson(data) {
+            // data comes from /api/explain
+            currentLesson = null; // mark as dynamic
+            currentCode = data.code || "";
+            currentOutput = data.sample_output || data.output || "";
+
+            document.getElementById('home-screen').classList.add('hidden');
+            document.getElementById('lesson-screen').classList.remove('hidden');
+
+            const titleEl = document.getElementById('lesson-title');
+            titleEl.textContent = data.title || "Python Concept";
+            if (data.is_fallback) {
+                titleEl.textContent += "  ✨ (generated live)";
+            }
+
+            document.getElementById('lesson-story').textContent = data.story || "";
+            document.getElementById('lesson-mission').textContent = data.mission || "";
+            document.getElementById('lesson-code').textContent = currentCode;
+            document.getElementById('lesson-recap').textContent = data.recap || "";
             document.getElementById('lesson-output').style.display = 'none';
         }
 
@@ -347,35 +371,41 @@ print("Total:", sum(int(p.split(":")[1]) for p in parts))`,
         }
 
         function runDemo() {
-            if (!currentLesson) return;
             const out = document.getElementById('lesson-output');
             out.style.display = 'block';
-            out.textContent = currentLesson.output + "\n\n✅ Code executed successfully (simulated on mobile)";
+
+            if (currentOutput) {
+                out.textContent = currentOutput + "\n\n✅ Ran successfully (simulated in browser)";
+            } else if (currentLesson && currentLesson.output) {
+                out.textContent = currentLesson.output + "\n\n✅ Code executed successfully (simulated on mobile)";
+            } else {
+                out.textContent = "Run the code in your own Python environment to see real output!";
+            }
         }
 
-        function askAnything() {
-            const input = document.getElementById('ask-input').value.trim().toLowerCase();
-            if (!input) return;
+        async function askAnything() {
+            const inputEl = document.getElementById('ask-input');
+            const query = inputEl.value.trim();
+            if (!query || query.length < 2) return;
 
-            // Simple keyword matching for mobile version
-            let key = null;
-            if (input.includes('append') || input.includes('add to list')) key = 'append';
-            else if (input.includes('pop') || input.includes('undo')) key = 'pop';
-            else if (input.includes('dict') || input.includes('dictionary') || input.includes('lookup')) key = 'dict';
-            else if (input.includes('split') || input.includes('join')) key = 'split';
-            else if (input.includes('loop') || input.includes('for ')) {
-                // fallback generic
-                alert("For loops: We repeat actions for each item in a list. Great for games and processing data!");
-                document.getElementById('ask-input').value = '';
-                return;
-            } else {
-                alert("I don't have a pre-made lesson for that yet, but the idea is the same: use Python to solve real problems with lists, loops, and reusable code!");
-                document.getElementById('ask-input').value = '';
-                return;
+            const originalPlaceholder = inputEl.placeholder;
+            inputEl.placeholder = "Thinking with real Python logic...";
+            inputEl.disabled = true;
+
+            try {
+                const res = await fetch('/api/explain?q=' + encodeURIComponent(query));
+                if (!res.ok) throw new Error('API error');
+                const data = await res.json();
+                inputEl.value = '';
+                renderDynamicLesson(data);
+            } catch (err) {
+                // Fallback to the old simple behavior if API fails (e.g. local file://)
+                console.warn('API call failed, using local fallback', err);
+                alert("The live Python brain is only available when deployed on Vercel.\n\nTry one of the lesson buttons above, or deploy the latest version!");
+            } finally {
+                inputEl.placeholder = originalPlaceholder;
+                inputEl.disabled = false;
             }
-
-            document.getElementById('ask-input').value = '';
-            loadLesson(key);
         }
 
         // Make it feel more like an installed app
